@@ -1,0 +1,23 @@
+# Zeilenenden im Arbeitsbaum vereinheitlichen.
+* text=auto eol=lf
+
+# Frozen topology dumps and config files are compared byte for byte
+# (acceptance criterion 13: --dump-topology and "Copy topology" must produce
+# identical text, usable unchanged as a test fixture). The serializer is
+# configured to write "\n" explicitly so this holds after a fresh checkout.
+*.json text eol=lf
+*.jsonc text eol=lf
+
+# Windows-Werkzeugketten erwarten CRLF in diesen Dateien.
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binärdateien nie anfassen.
+*.ico binary
+*.png binary
+*.dll binary
+*.exe binary

@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Planungsdaten — bleiben lokal, das Repo geht öffentlich
+# ─────────────────────────────────────────────────────────────────────────────
+# Konzept- und Spec-Dokumente sind interne Arbeitsunterlagen (deutsch) und
+# gehören nicht in ein öffentliches Repository. Sie liegen bewusst im
+# Arbeitsverzeichnis, damit die Werkzeugkette sie findet — aber nie im Git.
+concepts/
+specs/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# .NET
+# ─────────────────────────────────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Build-Ergebnisse
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Oo]ut/
+[Ll]og/
+publish/
+*.publishproj
+PublishScripts/
+
+# NuGet — das Projekt hat keine Abhängigkeiten (E1), die Einträge sind
+# Sicherheitsnetz, falls jemand versehentlich eines hinzufügt
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!packages/build/
+*.nuget.props
+*.nuget.targets
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Test- und Analyseergebnisse
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+BenchmarkDotNet.Artifacts/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Betriebssystem und Werkzeuge
+# ─────────────────────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+.DS_Store
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CorePin-spezifisch
+# ─────────────────────────────────────────────────────────────────────────────
+# Laufzeitartefakte, die beim Testen im Arbeitsverzeichnis entstehen können
+config.json
+config.corrupt-*.json
+*.corepin.log
+topology.json
+CorePin.portable
