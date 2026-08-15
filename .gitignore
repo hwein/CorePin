@@ -7,6 +7,9 @@
 concepts/
 specs/
 
+# Werkzeugkonfiguration der Arbeitsumgebung — lokal, nicht Teil des Projekts.
+.claude/
+
 # ─────────────────────────────────────────────────────────────────────────────
 # .NET
 # ─────────────────────────────────────────────────────────────────────────────
