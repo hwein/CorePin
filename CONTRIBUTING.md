@@ -71,9 +71,9 @@ description or a linked issue. It gets read and decided, not debated.
   pitfall, a *why*. Never a retelling of the code. If you change a line, check the
   comments around it and fix or delete the stale ones.
 - Nullable warnings are errors. No `!` without a comment justifying the assertion.
-- New behavior comes with tests. The test runner is hand-written (`dotnet run --project
-  tests/CorePin.Tests`); there is no `dotnet test`, because a test framework would be a
-  NuGet dependency.
+- New behavior comes with tests. The test runner is part of this repository (`dotnet run
+  --project tests/CorePin.Tests`); there is no `dotnet test`, because a test framework
+  would be a NuGet dependency.
 - `dotnet build` and the test run must both be green.
 - Commit messages follow [Conventional Commits
   1.0.0](https://www.conventionalcommits.org/en/v1.0.0/): imperative, subject line 72
@@ -97,8 +97,8 @@ An accepted PR is merged into `next` and ships with the next release.
 ## 6. AI-assisted contributions
 
 Explicitly fine. The same rules apply without exception, and you are responsible for what
-you submit, however it was produced. Generated bloat is treated exactly like hand-written
-bloat: rejected.
+you submit, however it was produced. Generated bloat is treated exactly like bloat you
+wrote yourself: rejected.
 
 ## 7. Security
 
