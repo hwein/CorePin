@@ -1,5 +1,5 @@
 using System.Reflection;
-using CorePin.Core.Paths;
+using CorePin.Core.Topology;
 
 namespace CorePin.Tests;
 
@@ -23,9 +23,7 @@ public static class ArchitectureTests
 
     private const string CoreNamespace = "CorePin.Core";
 
-    // S01 §5.4 names typeof(ClusterBuilder) as the handle on the Core assembly; that type
-    // arrives with S04, so Phase 0 uses AppPaths — same assembly.
-    private static Assembly CoreAssembly => typeof(AppPaths).Assembly;
+    private static Assembly CoreAssembly => typeof(ClusterBuilder).Assembly;
 
     public static void Test_CoreHasNoDeclaredPInvoke()
     {

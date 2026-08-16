@@ -1,0 +1,87 @@
+using System.Globalization;
+using System.Numerics;
+
+namespace CorePin.Core.Primitives;      // NOT Rules — S01 §2.5 and §3.3
+
+/// A 64-bit processor affinity mask. Bit i is logical processor i in group 0 (02 §5.1).
+public readonly struct AffinityMask : IEquatable<AffinityMask>
+{
+    /// Highest usable thread index: the target platform is capped at 64 logical
+    /// processors in one processor group (02 §3).
+    private const int MaxThread = 63;
+
+    public AffinityMask(ulong value) => Value = value;
+
+    public ulong Value { get; }
+
+    public static AffinityMask Empty => default;
+
+    public bool IsEmpty => Value == 0;
+
+    public int Count => BitOperations.PopCount(Value);
+
+    public bool Contains(int thread)
+        => (uint)thread <= MaxThread && (Value & (1UL << thread)) != 0;
+
+    public AffinityMask With(int thread)
+    {
+        Require(thread);
+        return new AffinityMask(Value | (1UL << thread));
+    }
+
+    public AffinityMask Without(int thread)
+    {
+        Require(thread);
+        return new AffinityMask(Value & ~(1UL << thread));
+    }
+
+    public bool FitsInto(AffinityMask other) => (Value & other.Value) == Value;
+
+    public static AffinityMask FromThreads(IEnumerable<int> threads)
+    {
+        ArgumentNullException.ThrowIfNull(threads);
+
+        ulong value = 0;
+        foreach (int thread in threads)
+        {
+            Require(thread);
+            value |= 1UL << thread;
+        }
+        return new AffinityMask(value);
+    }
+
+    public IReadOnlyList<int> ToThreads()
+    {
+        var result = new List<int>(Count);
+        ulong rest = Value;
+        while (rest != 0)
+        {
+            int bit = BitOperations.TrailingZeroCount(rest);
+            result.Add(bit);
+            rest &= rest - 1;
+        }
+        return result;
+    }
+
+    /// "0x" plus exactly 16 uppercase hex digits — the canonical form of S04 §3.4.
+    public string ToHex() => "0x" + Value.ToString("X16", CultureInfo.InvariantCulture);
+
+    public bool Equals(AffinityMask other) => Value == other.Value;
+
+    public override bool Equals(object? obj) => obj is AffinityMask other && Equals(other);
+
+    public override int GetHashCode() => Value.GetHashCode();
+
+    public override string ToString() => ToHex();
+
+    public static bool operator ==(AffinityMask left, AffinityMask right) => left.Equals(right);
+
+    public static bool operator !=(AffinityMask left, AffinityMask right) => !left.Equals(right);
+
+    private static void Require(int thread)
+    {
+        if ((uint)thread > MaxThread)
+            throw new ArgumentOutOfRangeException(nameof(thread), thread,
+                "thread index must be between 0 and 63");
+    }
+}

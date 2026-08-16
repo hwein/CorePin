@@ -11,3 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Application window that follows the Windows light/dark mode, including the title bar.
 - Session log file under `%LOCALAPPDATA%\CorePin\logs\`, with `--log-level debug|info|warn`.
+- `--dump-topology` writes the detected CPU topology as JSON to standard output.
+- The log records the detected processor clusters, their labels and cache sizes at startup.
+- Startup is refused with an explanatory message on systems with more than one processor
+  group.

@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- net10.0-windows, not net10.0: a net10.0 project cannot reference the
+         net10.0-windows CorePin.Interop (NU1201, S01 §2.1 G0 addendum). The interop test
+         boundary of S01 §2.1 is unchanged — only call-free interop test cases are allowed,
+         and the buffer test of S04 §10.6 is exactly one. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>CorePin.Tests</AssemblyName>
     <!-- CA1707 demands member names without underscores; S01 §5.1 makes the prefix "Test_"
@@ -9,5 +13,14 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CorePin.Core\CorePin.Core.csproj" />
+    <ProjectReference Include="..\..\src\CorePin.Interop\CorePin.Interop.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\data\topology\*.json"
+             Link="data\topology\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\data\raw\*.b64"
+             Link="data\raw\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

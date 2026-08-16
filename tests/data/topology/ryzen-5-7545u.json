@@ -1,0 +1,25 @@
+// CONSTRUCTED — and this dump tests an ASSUMPTION, not a measurement (02 §4.6, point 2).
+// The assumption is that Windows reports Zen 4c cores with a lower EfficiencyClass than
+// the full Zen 4 cores. Three review rounds could neither verify it on own hardware nor
+// back it up with solid evidence (03, findings 42/72); the indications rather point the
+// other way. The value of this test is that the rule does the right thing IF the
+// assumption holds — and that the alternative (a single efficiency class, therefore one
+// cluster) also runs through cleanly. Both outcomes are mandatory tests, see S04 §10.2.
+{
+  "capturedBy": "CorePin 0.1.0",
+  "constructed": true,
+  "vendor": "AuthenticAMD",
+  "cpuName": "AMD Ryzen 5 7545U with Radeon Graphics",
+  "activeGroupCount": 1,
+  "cores": [
+    { "mask": "0x0000000000000003", "efficiencyClass": 1, "smt": true },
+    { "mask": "0x000000000000000C", "efficiencyClass": 1, "smt": true },
+    { "mask": "0x0000000000000030", "efficiencyClass": 0, "smt": true },
+    { "mask": "0x00000000000000C0", "efficiencyClass": 0, "smt": true },
+    { "mask": "0x0000000000000300", "efficiencyClass": 0, "smt": true },
+    { "mask": "0x0000000000000C00", "efficiencyClass": 0, "smt": true }
+  ],
+  "caches": [
+    { "level": 3, "sizeBytes": 16777216, "mask": "0x0000000000000FFF" }
+  ]
+}
