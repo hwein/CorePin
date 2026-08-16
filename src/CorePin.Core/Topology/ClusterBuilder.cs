@@ -41,8 +41,6 @@ public static class ClusterBuilder
         };
     }
 
-    // ── Step 0 — entry checks ───────────────────────────────────────────────────────
-
     private static void Validate(TopologySnapshot snapshot)
     {
         if (snapshot.ActiveGroupCount != 1)
@@ -78,8 +76,6 @@ public static class ClusterBuilder
         }
     }
 
-    // ── Step 1a — physical cores in input order ─────────────────────────────────────
-
     private static List<CoreInfo> BuildCores(TopologySnapshot snapshot)
     {
         var result = new List<CoreInfo>(snapshot.Cores.Count);
@@ -100,8 +96,6 @@ public static class ClusterBuilder
         }
         return threads;
     }
-
-    // ── Step 1b — L3 groups, preliminary order ──────────────────────────────────────
 
     private static List<L3Group> BuildL3Groups(TopologySnapshot snapshot, NoteCollector notes)
     {
@@ -140,8 +134,6 @@ public static class ClusterBuilder
         return groups;
     }
 
-    // ── Step 1c — core → L3 group ───────────────────────────────────────────────────
-
     private static void AssignCores(
         List<CoreInfo> cores, List<L3Group> groups, ulong machineMask, NoteCollector notes)
     {
@@ -171,8 +163,6 @@ public static class ClusterBuilder
         }
     }
 
-    // ── Step 1d/1e — drop core-less groups, final order ─────────────────────────────
-
     private static List<L3Group> DropEmptyGroups(
         List<CoreInfo> cores, List<L3Group> groups, NoteCollector notes)
     {
@@ -199,8 +189,6 @@ public static class ClusterBuilder
 
         return ordered;
     }
-
-    // ── Steps 2–4 — clusters and their order ────────────────────────────────────────
 
     private static List<ClusterDraft> BuildClusters(List<CoreInfo> cores, List<L3Group> groups)
     {
@@ -274,8 +262,6 @@ public static class ClusterBuilder
     internal static string Hex(ulong value)
         => "0x" + value.ToString("X16", CultureInfo.InvariantCulture);
 }
-
-// ── Internal working types ──────────────────────────────────────────────────────────
 
 internal sealed class CoreInfo(ulong mask, int efficiencyClass, int[] threads)
 {

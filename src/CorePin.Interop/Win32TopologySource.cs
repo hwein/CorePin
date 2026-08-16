@@ -42,8 +42,6 @@ public sealed class Win32TopologySource : ITopologySource
         return buffer.AsSpan(0, (int)length).ToArray();
     }
 
-    // ── The two-step call ───────────────────────────────────────────────────────────
-
     private static (byte[] Buffer, uint Length) Query(List<string> warnings)
     {
         uint length = 0;
@@ -102,8 +100,6 @@ public sealed class Win32TopologySource : ITopologySource
         int plus = informational.IndexOf('+', StringComparison.Ordinal);
         return "CorePin " + (plus < 0 ? informational : informational[..plus]);
     }
-
-    // ── The buffer walk over variable-length records ────────────────────────────────
 
     private const int HeaderSize = 8;
     private const int GroupAffinitySize = 16;

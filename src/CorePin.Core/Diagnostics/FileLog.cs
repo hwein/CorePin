@@ -48,7 +48,7 @@ public sealed class FileLog : ILog, IDisposable
     private volatile bool _closed;
     private int _dropped;
 
-    // ── from here on: writer thread only ──
+    // Fields below are touched by the writer thread only.
     private FileStream? _stream;
     private string _currentFile = string.Empty;
     private long _bytesInFile;
@@ -150,8 +150,6 @@ public sealed class FileLog : ILog, IDisposable
         }
     }
 
-    // ── producer side ───────────────────────────────────────────────────────────────
-
     private void Submit(LogLevel level, string category, string message, bool forced)
     {
         var entry = new LogEntry(_clock.UtcNow, level, category, message, forced);
@@ -181,13 +179,9 @@ public sealed class FileLog : ILog, IDisposable
     internal bool TryEnqueue(QueueItem item)
     {
         if (_closed) return false;
-        // ObjectDisposedException is an InvalidOperationException; order forced (CS0160).
         try { return _queue.TryAdd(item); }
-        catch (ObjectDisposedException) { return false; }
         catch (InvalidOperationException) { return false; }
     }
-
-    // ── writer thread ───────────────────────────────────────────────────────────────
 
     private void Run()
     {
@@ -365,8 +359,6 @@ public sealed class FileLog : ILog, IDisposable
             catch (Exception ex) { TraceOnly(ex); }
         }
     }
-
-    // ── formatting ──────────────────────────────────────────────────────────────────
 
     internal static string FormatLine(LogEntry entry)
     {

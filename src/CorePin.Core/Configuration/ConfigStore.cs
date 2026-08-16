@@ -150,8 +150,6 @@ public sealed class ConfigStore
         _ => WriteGuard.Open,
     };
 
-    // ── loading ─────────────────────────────────────────────────────────────────────
-
     private static ConfigLoadResult Defaults(ConfigLoadOutcome outcome)
         => new(AppConfig.Empty(), RuleSet.Empty, outcome, null, 0);
 
@@ -444,8 +442,6 @@ public sealed class ConfigStore
         }
         return SkippedFileName;
     }
-
-    // ── writing ─────────────────────────────────────────────────────────────────────
 
     private void WriteWithRetry(AppConfig config)
     {

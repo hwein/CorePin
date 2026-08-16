@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace CorePin.Core.Configuration;
 
-// ── Stage 1: the outer shell. NO required member. `rules` stays raw.
+// Read stage 1: the outer shell, no required member, `rules` stays raw.
 internal sealed class ConfigFileDto
 {
     public JsonElement SchemaVersion { get; set; }
@@ -34,7 +34,7 @@ internal sealed class WindowBoundsJson
     public int H { get; set; }
 }
 
-// ── Stage 2: one rule at a time, likewise without required members.
+// Read stage 2: one rule at a time, likewise without required members.
 internal sealed class RuleJson
 {
     public string? Id { get; set; }
@@ -46,7 +46,7 @@ internal sealed class RuleJson
     public JsonElement Enabled { get; set; }
 }
 
-// ── Writing: own, strict DTOs, separate from the tolerant reading ones.
+// Write DTOs are strict, separate from the tolerant reading ones.
 internal sealed class ConfigFileWriteDto
 {
     public required int SchemaVersion { get; init; }
