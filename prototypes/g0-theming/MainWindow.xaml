@@ -1,0 +1,13 @@
+<local:DemoWindow x:Class="G0Theming.MainWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:local="clr-namespace:G0Theming"
+                  Title="CorePin — G0 theming prototype (Weg B)"
+                  Width="660" Height="480"
+                  WindowStartupLocation="Manual" Left="120" Top="120"
+                  ResizeMode="CanResize"
+                  UseLayoutRounding="True"
+                  TextOptions.TextFormattingMode="Display"
+                  Background="{DynamicResource CorePin.Brush.WindowBackground}">
+  <local:DemoPanel x:Name="DemoContent"/>
+</local:DemoWindow>

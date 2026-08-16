@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Throw-away G0 theming prototype (S03 §2.2). Deliberately NOT part of CorePin.sln and
+       without any ProjectReference to the CorePin projects — deleting the folder must be
+       enough to remove it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>G0Theming</AssemblyName>
+    <RootNamespace>G0Theming</RootNamespace>
+    <StartupObject>G0Theming.Program</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>   <!-- generated [LibraryImport] stubs -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Own Main (Program.cs): argument parsing and AppContext.SetSwitch must run before any
+       WPF type is touched, so the SDK must not generate its own entry point. -->
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" SubType="Designer" Generator="MSBuild:Compile" />
+  </ItemGroup>
+
+  <!-- The Weg-A backdrop switch is intentionally NOT declared here: the prototype has to be
+       able to start with and without it from the same binary (S03 §11 point 15), so it is set
+       through AppContext.SetSwitch in Main instead. Whether that is sufficient is itself a G0
+       finding for S01 §6.2. -->
+
+</Project>
