@@ -9,12 +9,13 @@ namespace CorePin.Core.Topology;
 /// (S04 §3.4), input is tolerant (S04 §3.6).
 public static class TopologyJson
 {
-    /// The document text is assembled by hand — the fallback S04 T-A6 names for the case
-    /// that Utf8JsonWriter.WriteRawValue does not indent. MEASURED: it does not. In indented
-    /// mode it puts every raw element of an array on ONE line, separated by commas, so the
-    /// canonical form of S04 §3.4 (one record per line, two-space indent) is unreachable
-    /// through it. Assembling the text keeps LF, the indent and the field order properties
-    /// of this code instead of properties of the writer — which is what criterion 13 needs.
+    /// Serialize builds the document text with a StringBuilder — the fallback S04 T-A6 names
+    /// for the case that Utf8JsonWriter.WriteRawValue does not indent. MEASURED: it does not.
+    /// In indented mode it puts every raw element of an array on ONE line, separated by
+    /// commas, so the canonical form of S04 §3.4 (one record per line, two-space indent) is
+    /// unreachable through it. Assembling the text keeps LF, the indent and the field order
+    /// properties of this code instead of properties of the writer — which is what
+    /// criterion 13 needs.
     /// Only the three free-text fields go through JSON escaping, with the encoder S01 §3.2
     /// declares binding (the default encoder would mask "+", "&" and "<").
     private static readonly JavaScriptEncoder Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
