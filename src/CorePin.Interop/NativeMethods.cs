@@ -48,4 +48,47 @@ internal static partial class NativeMethods
     internal const uint MB_OK = 0x00000000;
     internal const uint MB_ICONWARNING = 0x00000030;
     internal const uint MB_ICONINFORMATION = 0x00000040;
+
+    internal const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+    internal const uint PROCESS_SET_INFORMATION = 0x0200;
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    internal static partial SafeProcessAccessHandle OpenProcess(
+        uint dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, uint dwProcessId);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool CloseHandle(nint hObject);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", SetLastError = true,
+                   StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool QueryFullProcessImageName(
+        SafeProcessAccessHandle hProcess, uint dwFlags, Span<char> lpExeName, ref uint lpdwSize);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetProcessTimes", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetProcessTimes(
+        SafeProcessAccessHandle hProcess,
+        out FILETIME lpCreationTime, out FILETIME lpExitTime,
+        out FILETIME lpKernelTime, out FILETIME lpUserTime);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetProcessAffinityMask(
+        SafeProcessAccessHandle hProcess, out nuint lpProcessAffinityMask, out nuint lpSystemAffinityMask);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool SetProcessAffinityMask(
+        SafeProcessAccessHandle hProcess, nuint dwProcessAffinityMask);
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct FILETIME
+{
+    public uint DwLowDateTime;
+    public uint DwHighDateTime;
+
+    public readonly long ToFileTimeUtc() => ((long)DwHighDateTime << 32) | DwLowDateTime;
 }

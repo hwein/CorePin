@@ -19,3 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file may be edited by hand and tolerates comments and trailing commas.
 - A single malformed rule is skipped and listed in `config.skipped.json` instead of
   discarding the whole file; an unreadable file is renamed aside and startup continues.
+- Rules are now applied: a program listed in `config.json` is pinned to its cores within a
+  second, whether it starts later or is already running, and is pinned again if something
+  else changes its affinity.

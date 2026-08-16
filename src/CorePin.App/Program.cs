@@ -6,6 +6,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using CorePin.Core.Configuration;
 using CorePin.Core.Diagnostics;
+using CorePin.Core.Engine;
 using CorePin.Core.Paths;
 using CorePin.Core.Platform;
 using CorePin.Core.Time;
@@ -132,7 +133,14 @@ internal static class Program
                 $"logicalProcessors changed: {loaded.Config.Machine.LogicalProcessors} -> {topology.LogicalProcessorCount}, all rules marked Needs review"));
         }
 
-        // `rules` and `guard` are built here but not yet handed on to App.
+        // 5./6./7. Tray, watcher, window. Only the watcher exists yet; `rules` and `guard`
+        //    are built here but not yet handed on to App.
+        var engine = new AffinityEngine(new ProcessInventory(), new AffinityAccess(), clock, log,
+                                        topology.MachineMask);
+        using var watcher = new EngineHost(engine, clock, log, loaded.Config.Settings.PollIntervalMs);
+        watcher.Submit(rules, new RuleChange(RuleChangeKind.None, Guid.Empty));
+        watcher.Start();
+
         var app = new App();
         app.InitializeComponent();
         try
@@ -147,6 +155,7 @@ internal static class Program
         }
 
         int exitCode = app.Run();
+        watcher.Stop();
 
         log.WriteAlways(LogLevel.Info, "app", $"CorePin exiting (code {exitCode})");
         return exitCode;
