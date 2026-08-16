@@ -55,40 +55,40 @@ internal static class Program
 
         // 2. Single instance is not implemented yet.
         using var log = FileLog.Create(paths.LogDirectory,
-                                       opts.LogLevelOverride ?? LogLevel.Info, clock);
+                                       opts.LogLevelOverride ?? LogLevel.Information, clock);
 
-        log.WriteAlways(LogLevel.Info, "app",
+        log.WriteAlways(LogLevel.Information, "app",
             $"CorePin {Version()} starting (flags: {FlagNames(opts)})");
-        log.WriteAlways(LogLevel.Info, "topology", Summarize(topology));
+        log.WriteAlways(LogLevel.Information, "topology", Summarize(topology));
         if (log.IsEnabled(LogLevel.Debug))
             log.Debug("topology", FullDump(topology));
 
         //    The source ran before the logger and collected these instead of writing them.
-        foreach (var w in source.Warnings) log.Warn("topology", w);
+        foreach (var w in source.Warnings) log.Warning("topology", w);
 
         foreach (var a in opts.Unknown)
-            log.Warn("app", $"unknown argument '{a}' ignored");
+            log.Warning("app", $"unknown argument '{a}' ignored");
         if (opts.InvalidLogLevelValue is { } bad)
-            log.Warn("app", $"unknown --log-level value '{bad}' ignored, config.json applies");
+            log.Warning("app", $"unknown --log-level value '{bad}' ignored, config.json applies");
 
         var guard = WriteGuard.Open;
 #if DEBUG
         // 3b. Only here: this safeguard needs the logger and the REAL processor count.
         if (opts.DebugTopologyFile is not null)
         {
-            log.Warn("app",
+            log.Warning("app",
                 $"debug switch active: --debug-topology {Path.GetFileName(opts.DebugTopologyFile)}");
             int real;
             try { real = ClusterBuilder.Build(new Win32TopologySource().Read()).LogicalProcessorCount; }
             catch (Exception ex)
             {
-                log.Warn("app", $"real topology unreadable: {ex}");
+                log.Critical("app", $"real topology unreadable: {ex}");
                 MessageBoxes.ShowTopologyReadFailed(ex);
                 return 4;
             }
             if (topology.LogicalProcessorCount > real)
             {
-                log.Warn("app", string.Create(CultureInfo.InvariantCulture,
+                log.Warning("app", string.Create(CultureInfo.InvariantCulture,
                     $"fixture reports {topology.LogicalProcessorCount} LP, machine has {real} — switch rejected"));
                 MessageBoxes.ShowFixtureTooLarge(topology.LogicalProcessorCount, real);
                 return 5;
@@ -97,7 +97,7 @@ internal static class Program
             guard = WriteGuard.Strictest(guard, WriteGuard.NoPersist);
         }
         if (opts.DebugGroupCount is { } groups)
-            log.Warn("app", string.Create(CultureInfo.InvariantCulture,
+            log.Warning("app", string.Create(CultureInfo.InvariantCulture,
                 $"debug switch active: --debug-groups {groups}"));
 #endif
 
@@ -109,7 +109,7 @@ internal static class Program
         {
             log.Minimum = forced;
             // Level names are written lower case, unlike the enum member.
-            log.WriteAlways(LogLevel.Info, "app",
+            log.WriteAlways(LogLevel.Information, "app",
                 $"--log-level {forced.ToString().ToLowerInvariant()} overrides config.json settings.logLevel for this session");
         }
         else
@@ -129,7 +129,7 @@ internal static class Program
         if (loaded.Config.Machine.LogicalProcessors != topology.LogicalProcessorCount)
         {
             rules = rules.MarkAllForReview();
-            log.Warn("config", string.Create(CultureInfo.InvariantCulture,
+            log.Warning("config", string.Create(CultureInfo.InvariantCulture,
                 $"logicalProcessors changed: {loaded.Config.Machine.LogicalProcessors} -> {topology.LogicalProcessorCount}, all rules marked Needs review"));
         }
 
@@ -150,14 +150,14 @@ internal static class Program
         catch (Exception ex)
         {
             // Fatal either way — but the reason has to be in the log first.
-            log.Warn("app", $"theme initialisation failed: {ex}");
+            log.Critical("app", $"theme initialisation failed: {ex}");
             throw;
         }
 
         int exitCode = app.Run();
         watcher.Stop();
 
-        log.WriteAlways(LogLevel.Info, "app", $"CorePin exiting (code {exitCode})");
+        log.WriteAlways(LogLevel.Information, "app", $"CorePin exiting (code {exitCode})");
         return exitCode;
     }
 

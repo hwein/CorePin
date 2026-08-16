@@ -9,10 +9,10 @@ public static class FileLogTests
     public static void Test_Rolling_NewFilePerCreate()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            log.Minimum = LogLevel.Info;
-            log.Info("app", "one");
+            log.Minimum = LogLevel.Information;
+            log.Information("app", "one");
         }
 
         Assert.Equal(1, LogFiles(dir.Path).Length, "exactly one log file per program start (S02 §3.2)");
@@ -23,9 +23,9 @@ public static class FileLogTests
     public static void Test_Rolling_CollisionGetsSuffix()
     {
         using var dir = new TempDir();
-        var log1 = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock());
+        var log1 = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock());
         log1.Flush();
-        var log2 = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock());
+        var log2 = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock());
         log2.Flush();
         log1.Dispose();
         log2.Dispose();
@@ -42,10 +42,10 @@ public static class FileLogTests
     {
         using var dir = new TempDir();
         var limits = FileLogLimits.Default with { FileSizeBytes = 600 };
-        using (var log = FileLog.CreateForTests(dir.Path, LogLevel.Info, new FakeClock(), limits))
+        using (var log = FileLog.CreateForTests(dir.Path, LogLevel.Information, new FakeClock(), limits))
         {
-            log.Minimum = LogLevel.Info;
-            for (int i = 0; i < 20; i++) log.Info("app", "0123456789");
+            log.Minimum = LogLevel.Information;
+            for (int i = 0; i < 20; i++) log.Information("app", "0123456789");
         }
 
         var files = LogFiles(dir.Path);
@@ -63,10 +63,10 @@ public static class FileLogTests
     {
         using var dir = new TempDir();
         var limits = FileLogLimits.Default with { FileSizeBytes = 600, SessionFiles = 3 };
-        using (var log = FileLog.CreateForTests(dir.Path, LogLevel.Info, new FakeClock(), limits))
+        using (var log = FileLog.CreateForTests(dir.Path, LogLevel.Information, new FakeClock(), limits))
         {
-            log.Minimum = LogLevel.Info;
-            for (int i = 0; i < 200; i++) log.Info("app", "0123456789");
+            log.Minimum = LogLevel.Information;
+            for (int i = 0; i < 200; i++) log.Information("app", "0123456789");
         }
 
         var names = LogFiles(dir.Path).Select(Path.GetFileName).ToArray();
@@ -88,10 +88,10 @@ public static class FileLogTests
         File.WriteAllText(foreign, new string('x', 2000));
 
         var limits = FileLogLimits.Default with { FileSizeBytes = 600, DirectoryBudgetBytes = 100 };
-        using (var log = FileLog.CreateForTests(dir.Path, LogLevel.Info, new FakeClock(), limits))
+        using (var log = FileLog.CreateForTests(dir.Path, LogLevel.Information, new FakeClock(), limits))
         {
-            log.Minimum = LogLevel.Info;
-            for (int i = 0; i < 60; i++) log.Info("app", "0123456789");
+            log.Minimum = LogLevel.Information;
+            for (int i = 0; i < 60; i++) log.Information("app", "0123456789");
         }
 
         Assert.True(!File.Exists(foreign), "a foreign, older session prefix is deleted over budget (S02 §3.3)");
@@ -102,15 +102,15 @@ public static class FileLogTests
             "the running session stays above the directory budget and is not touched by it");
     }
 
-    public static void Test_LevelFiltering_DebugInfoWarn()
+    public static void Test_LevelFiltering_DebugInformationWarning()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            log.Minimum = LogLevel.Warn;
+            log.Minimum = LogLevel.Warning;
             log.Debug("app", "d");
-            log.Info("app", "i");
-            log.Warn("app", "w");
+            log.Information("app", "i");
+            log.Warning("app", "w");
         }
 
         Assert.Equal("w", string.Join("|", Messages(dir.Path)), "only lines >= Minimum are written");
@@ -119,21 +119,21 @@ public static class FileLogTests
     public static void Test_ColdStart_IsEnabledIsOpen()
     {
         using var dir = new TempDir();
-        using var log = FileLog.Create(dir.Path, LogLevel.Warn, new FakeClock());
+        using var log = FileLog.Create(dir.Path, LogLevel.Warning, new FakeClock());
 
         Assert.True(log.IsEnabled(LogLevel.Debug), "before the first Minimum assignment every level is open (S02 §5.4)");
-        log.Minimum = LogLevel.Warn;
+        log.Minimum = LogLevel.Warning;
         Assert.True(!log.IsEnabled(LogLevel.Debug), "after that the level filter applies");
     }
 
     public static void Test_ColdStartBuffer_Replay()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            log.Info("app", "before");
-            log.Minimum = LogLevel.Info;
-            log.Info("app", "after");
+            log.Information("app", "before");
+            log.Minimum = LogLevel.Information;
+            log.Information("app", "after");
         }
 
         Assert.Equal("before|after", string.Join("|", Messages(dir.Path)),
@@ -143,11 +143,11 @@ public static class FileLogTests
     public static void Test_ColdStartBuffer_ReplayDropsBelowNewMinimum()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
             log.Debug("app", "d");
-            log.Warn("app", "w");
-            log.Minimum = LogLevel.Warn;
+            log.Warning("app", "w");
+            log.Minimum = LogLevel.Warning;
         }
 
         Assert.Equal("w", string.Join("|", Messages(dir.Path)),
@@ -157,23 +157,23 @@ public static class FileLogTests
     public static void Test_ColdStartBuffer_WriteAlwaysSurvivesEveryLevel()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            log.WriteAlways(LogLevel.Info, "app", "CorePin 0.1.0 starting (flags: none)");
-            log.Minimum = LogLevel.Warn;
+            log.WriteAlways(LogLevel.Information, "app", "CorePin 0.1.0 starting (flags: none)");
+            log.Minimum = LogLevel.Warning;
         }
 
         Assert.Equal("CorePin 0.1.0 starting (flags: none)", string.Join("|", Messages(dir.Path)),
-            "Forced survives Minimum = Warn (S02 §6, †)");
+            "Forced survives Minimum = Warning (S02 §6, †)");
     }
 
     public static void Test_ColdStartBuffer_LimitDropsYoungestLines()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            for (int i = 0; i < 250; i++) log.Info("app", i.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            log.Minimum = LogLevel.Info;
+            for (int i = 0; i < 250; i++) log.Information("app", i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            log.Minimum = LogLevel.Information;
         }
 
         var messages = Messages(dir.Path);
@@ -185,9 +185,9 @@ public static class FileLogTests
     public static void Test_ColdStartBuffer_ForcedReplayOnDispose()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            log.Info("app", "never-set-minimum");
+            log.Information("app", "never-set-minimum");
         }
 
         Assert.Equal("never-set-minimum", string.Join("|", Messages(dir.Path)),
@@ -197,16 +197,16 @@ public static class FileLogTests
     public static void Test_ColdStartBuffer_ConcurrentWriting()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
             var threads = new List<Thread>();
             for (int t = 0; t < 4; t++)
             {
-                var thread = new Thread(() => { for (int i = 0; i < 50; i++) log.Info("app", "x"); });
+                var thread = new Thread(() => { for (int i = 0; i < 50; i++) log.Information("app", "x"); });
                 threads.Add(thread);
                 thread.Start();
             }
-            log.Minimum = LogLevel.Info;
+            log.Minimum = LogLevel.Information;
             foreach (var thread in threads) thread.Join();
         }
 
@@ -220,9 +220,9 @@ public static class FileLogTests
         using var gate = new ManualResetEventSlim(false);
         var limits = FileLogLimits.Default with { QueueCapacity = 10 };
 
-        var log = FileLog.CreateForTests(dir.Path, LogLevel.Info, new FakeClock(), limits, gate);
-        log.Minimum = LogLevel.Info;
-        for (int i = 0; i < 30; i++) log.Info("app", "line");   // the writer is still held back
+        var log = FileLog.CreateForTests(dir.Path, LogLevel.Information, new FakeClock(), limits, gate);
+        log.Minimum = LogLevel.Information;
+        for (int i = 0; i < 30; i++) log.Information("app", "line");   // the writer is still held back
 
         gate.Set();
         log.Dispose();
@@ -236,11 +236,11 @@ public static class FileLogTests
     public static void Test_Queue_WriteAfterDisposeHasNoEffect()
     {
         using var dir = new TempDir();
-        var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock());
-        log.Minimum = LogLevel.Info;
+        var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock());
+        log.Minimum = LogLevel.Information;
         log.Dispose();
 
-        log.Info("app", "after dispose");   // does not throw
+        log.Information("app", "after dispose");   // does not throw
         log.Flush();
 
         Assert.Equal(0, Messages(dir.Path).Length, "after Dispose nothing is written any more (S02 §10)");
@@ -249,10 +249,10 @@ public static class FileLogTests
     public static void Test_Shutdown_QueueDrainsBeforeClosing()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock()))
         {
-            log.Minimum = LogLevel.Info;
-            for (int i = 0; i < 500; i++) log.Info("app", "line");
+            log.Minimum = LogLevel.Information;
+            for (int i = 0; i < 500; i++) log.Information("app", "line");
         }
 
         Assert.Equal(500, Messages(dir.Path).Length, "Dispose waits for the queue to drain (S02 §5.6)");
@@ -267,10 +267,10 @@ public static class FileLogTests
 
         string expected = Path.Combine(Path.GetTempPath(), "CorePin", "logs");
         string? created;
-        using (var log = FileLog.Create(impossible, LogLevel.Info, new FakeClock()))
+        using (var log = FileLog.Create(impossible, LogLevel.Information, new FakeClock()))
         {
             Assert.Equal(expected, log.Directory, "fallback to %TEMP% (S02 §10)");
-            log.Minimum = LogLevel.Info;
+            log.Minimum = LogLevel.Information;
             log.Flush();
             created = LogFiles(log.Directory).FirstOrDefault();
         }
@@ -283,27 +283,27 @@ public static class FileLogTests
     public static void Test_SessionHeader_AppearsRegardlessOfMinimum()
     {
         using var dir = new TempDir();
-        using (var log = FileLog.Create(dir.Path, LogLevel.Warn, new FakeClock()))
+        using (var log = FileLog.Create(dir.Path, LogLevel.Warning, new FakeClock()))
         {
-            log.Minimum = LogLevel.Warn;
-            log.WriteAlways(LogLevel.Info, "app", "CorePin 0.1.0 starting (flags: none)");
-            log.Info("app", "swallowed");
-            log.WriteAlways(LogLevel.Info, "app", "CorePin exiting (code 0)");
+            log.Minimum = LogLevel.Warning;
+            log.WriteAlways(LogLevel.Information, "app", "CorePin 0.1.0 starting (flags: none)");
+            log.Information("app", "swallowed");
+            log.WriteAlways(LogLevel.Information, "app", "CorePin exiting (code 0)");
         }
 
         Assert.Equal("CorePin 0.1.0 starting (flags: none)|CorePin exiting (code 0)",
             string.Join("|", Messages(dir.Path)),
-            "app.start and app.exit are there even at Minimum = Warn (S02 §6)");
+            "app.start and app.exit are there even at Minimum = Warning (S02 §6)");
     }
 
     public static void Test_NonBlocking_TenThousandCalls()
     {
         using var dir = new TempDir();
-        using var log = FileLog.Create(dir.Path, LogLevel.Info, new FakeClock());
-        log.Minimum = LogLevel.Info;
+        using var log = FileLog.Create(dir.Path, LogLevel.Information, new FakeClock());
+        log.Minimum = LogLevel.Information;
 
         var watch = Stopwatch.StartNew();
-        for (int i = 0; i < 10_000; i++) log.Info("app", "throughput");
+        for (int i = 0; i < 10_000; i++) log.Information("app", "throughput");
         watch.Stop();
 
         Assert.True(watch.ElapsedMilliseconds < 2000,

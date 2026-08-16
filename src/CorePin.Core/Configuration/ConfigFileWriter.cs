@@ -27,7 +27,7 @@ internal sealed class ConfigFileWriter(string directory, ILog log)
         catch (Exception ex)
         {
             // Serialization sits INSIDE the try: Save() must never throw. Not retryable.
-            log.Warn("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
+            log.Error("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
             return;
         }
 
@@ -42,14 +42,14 @@ internal sealed class ConfigFileWriter(string directory, ILog log)
             }
             catch (IOException ex) when (attempt < backoffMs.Length)
             {
-                log.Warn("config",
+                log.Warning("config",
                     $"write attempt {attempt + 1} failed: {ex.GetType().Name} {ex.HResult}, retrying");
                 Thread.Sleep(backoffMs[attempt]);
             }
             catch (Exception ex)
             {
                 // Catch-all so Save never throws; no ex.Message — it can carry the user name.
-                log.Warn("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
+                log.Error("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
                 return;
             }
         }

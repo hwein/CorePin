@@ -55,7 +55,7 @@ public sealed class EngineHost : IDisposable
         if (_thread is not null) return;
 
         _thread = new Thread(Loop) { Name = "CorePin.Engine", IsBackground = true };
-        _log.Info("engine", $"watcher started, poll interval {_pollIntervalMs} ms");
+        _log.Information("engine", $"watcher started, poll interval {_pollIntervalMs} ms");
         _thread.Start();
     }
 
@@ -69,12 +69,12 @@ public sealed class EngineHost : IDisposable
 
         if (!thread.Join(StopTimeoutMs))
         {
-            _log.Warn("engine", $"worker thread did not stop within {StopTimeoutMs} ms, continuing shutdown");
+            _log.Warning("engine", $"worker thread did not stop within {StopTimeoutMs} ms, continuing shutdown");
             return;
         }
 
         _thread = null;
-        if (!_gaveUp) _log.Info("engine", "watcher stopped");
+        if (!_gaveUp) _log.Information("engine", "watcher stopped");
     }
 
     public void Submit(RuleSet rules, RuleChange change)
@@ -128,11 +128,11 @@ public sealed class EngineHost : IDisposable
             {
                 failures++;
                 nextTick = _clock.MonotonicMs + _pollIntervalMs;   // one failure per poll interval, not a retry storm
-                _log.Warn("engine", $"pass failed ({failures}): {ex}");
+                _log.Warning("engine", $"pass failed ({failures}): {ex}");
                 if (failures < MaxConsecutiveFailures) continue;
 
                 _gaveUp = true;
-                _log.Warn("engine", $"watcher gave up after {failures} consecutive failures, monitoring stopped");
+                _log.Critical("engine", $"watcher gave up after {failures} consecutive failures, monitoring stopped");
                 Faulted?.Invoke(new EngineFault(ex.Message, failures));
                 return;
             }

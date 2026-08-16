@@ -124,7 +124,7 @@ internal sealed class LogFileWriter : IDisposable
 
     private void WriteHeader(string message)
     {
-        var header = new LogEntry(_clock.UtcNow, LogLevel.Warn, "app", message);
+        var header = new LogEntry(_clock.UtcNow, LogLevel.Warning, "app", message);
         byte[] bytes = Utf8NoBom.GetBytes(FileLog.FormatLine(header) + "\n");
         try { _stream?.Write(bytes, 0, bytes.Length); _bytesInFile += bytes.Length; }
         catch (Exception ex) { FileLog.TraceOnly(ex); _disabled = true; }
@@ -133,7 +133,7 @@ internal sealed class LogFileWriter : IDisposable
         {
             _pendingSessionLimitNote = false;
             // From the limit in force, so the line cannot claim a number that is not enforced.
-            Write(FileLog.FormatLine(new LogEntry(_clock.UtcNow, LogLevel.Warn, "app",
+            Write(FileLog.FormatLine(new LogEntry(_clock.UtcNow, LogLevel.Warning, "app",
                 $"session log size limit reached ({_limits.SessionFiles.ToString(CultureInfo.InvariantCulture)} files), "
                 + "oldest continuation file removed")));
         }

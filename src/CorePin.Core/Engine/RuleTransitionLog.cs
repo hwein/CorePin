@@ -24,7 +24,7 @@ internal sealed class RuleTransitionLog(IClock clock, ILog log)
         {
             _lastLogged[status.RuleId] = current;
             if (current.State == RuleState.Idle) return;      // Idle is the silent ground state
-            log.Info("engine", Format(null, current, exeName, status));
+            log.Information("engine", Format(null, current, exeName, status));
             return;
         }
 
@@ -45,7 +45,7 @@ internal sealed class RuleTransitionLog(IClock clock, ILog log)
         if (previous == current) return;
 
         _lastLogged[status.RuleId] = current;
-        log.Info("engine", Format(previous, current, exeName, status));
+        log.Information("engine", Format(previous, current, exeName, status));
     }
 
     internal void Forget(Guid ruleId)

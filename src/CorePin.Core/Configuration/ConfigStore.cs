@@ -34,14 +34,14 @@ public sealed class ConfigStore
     {
         if (!TryEnsureDirectory())
         {
-            _log.Warn("config", "cannot create config directory, starting with in-memory defaults");
+            _log.Error("config", "cannot create config directory, starting with in-memory defaults");
             return Defaults(ConfigLoadOutcome.Missing);
         }
 
         string path = Path.Combine(_directory, ConfigFileNames.Config);
         if (!File.Exists(path))
         {
-            _log.Info("config", "no config.json found, starting with defaults");
+            _log.Information("config", "no config.json found, starting with defaults");
             return Defaults(ConfigLoadOutcome.Missing);
         }
 
@@ -53,7 +53,7 @@ public sealed class ConfigStore
         catch (Exception ex)
         {
             // Untouched on purpose: a Missing here would later overwrite the real rules.
-            _log.Warn("config",
+            _log.Warning("config",
                 $"config.json exists but could not be opened ({ex.GetType().Name}), starting with defaults; changes will not be saved");
             return Defaults(ConfigLoadOutcome.Unreadable);
         }
@@ -63,7 +63,7 @@ public sealed class ConfigStore
         if (header.SchemaVersion > MaxSchemaVersion)
         {
             // The file is not touched at all — its timestamp must stay unchanged.
-            _log.Warn("config",
+            _log.Warning("config",
                 $"config.json schemaVersion {header.SchemaVersion} is newer than supported ({MaxSchemaVersion}), UI is read-only");
             return new ConfigLoadResult(AppConfig.Empty(), RuleSet.Empty, ConfigLoadOutcome.TooNew,
                                         header.SchemaVersion.ToString(CultureInfo.InvariantCulture), 0);
@@ -82,7 +82,7 @@ public sealed class ConfigStore
             Rules = RuleSet.Empty,          // always empty, structurally
         };
 
-        _log.Info("config", $"config.json loaded, {rules.Rules.Count} rules, schemaVersion {header.SchemaVersion}");
+        _log.Information("config", $"config.json loaded, {rules.Rules.Count} rules, schemaVersion {header.SchemaVersion}");
         return new ConfigLoadResult(config, rules, ConfigLoadOutcome.Loaded, detail, skippedRaw.Count);
     }
 
@@ -91,7 +91,7 @@ public sealed class ConfigStore
     {
         if (!_guard.CanPersist)
         {
-            _log.Warn("config", $"save discarded: WriteGuard.{_guard.Reason} active");
+            _log.Warning("config", $"save discarded: WriteGuard.{_guard.Reason} active");
             return;
         }
         _writer.Write(config);
@@ -118,7 +118,7 @@ public sealed class ConfigStore
     private ConfigLoadResult Corrupt(string path)
     {
         string name = _sideFiles.RenameCorrupt(path);
-        _log.Warn("config", $"config.json unreadable, renamed to {name}, starting with defaults");
+        _log.Warning("config", $"config.json unreadable, renamed to {name}, starting with defaults");
         return new ConfigLoadResult(AppConfig.Empty(), RuleSet.Empty, ConfigLoadOutcome.Corrupt, name, 0);
     }
 }

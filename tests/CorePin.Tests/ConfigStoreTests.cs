@@ -33,7 +33,7 @@ public static class ConfigStoreTests
             {
                 PollIntervalMs = 1500,
                 StartWithWindows = "admin",
-                LogLevel = LogLevel.Warn,
+                LogLevel = LogLevel.Warning,
                 WindowBounds = new WindowBounds(100, 120, 660, 480),
             },
             Rules = new RuleSet(
@@ -191,13 +191,35 @@ public static class ConfigStoreTests
         Assert.Equal(ConfigLoadOutcome.Corrupt, loaded.Outcome, "a wrong JSON type on logicalProcessors makes the file unreadable");
     }
 
-    public static void Test_LogLevel_UnknownString_FallsBackToInfo()
+    public static void Test_LogLevel_AllSpellingsParsed()
+    {
+        var cases = new (string Value, LogLevel Expected)[]
+        {
+            ("trace", LogLevel.Trace),
+            ("debug", LogLevel.Debug),
+            ("information", LogLevel.Information),
+            ("warning", LogLevel.Warning),
+            ("error", LogLevel.Error),
+            ("critical", LogLevel.Critical),
+            ("info", LogLevel.Information),
+            ("warn", LogLevel.Warning),
+        };
+
+        foreach (var (value, expected) in cases)
+        {
+            var (loaded, _) = LoadJson($$"""{ "settings": { "logLevel": "{{value}}" } }""");
+            Assert.Equal(expected, loaded.Config.Settings.LogLevel, $"logLevel '{value}' parses to {expected}");
+        }
+    }
+
+    public static void Test_LogLevel_UnknownString_FallsBackToInformation()
     {
         var (loaded, log) = LoadJson("""{ "settings": { "logLevel": "verbose" } }""");
 
         Assert.Equal(ConfigLoadOutcome.Loaded, loaded.Outcome, "an unknown level is no reason for corruption");
-        Assert.Equal(LogLevel.Info, loaded.Config.Settings.LogLevel, "the fallback is info");
-        Assert.True(log.Has("settings.logLevel 'verbose' is not a valid level (debug|info|warn), using info"),
+        Assert.Equal(LogLevel.Information, loaded.Config.Settings.LogLevel, "the fallback is information");
+        Assert.True(log.Has("settings.logLevel 'verbose' is not a valid level "
+            + "(trace|debug|information|warning|error|critical), using information"),
             "config.log-level-invalid is logged");
     }
 
@@ -502,7 +524,7 @@ public static class ConfigStoreTests
             + "    \"pollIntervalMs\": 1000,\n"
             + "    \"startWithWindows\": \"normal\",\n"
             + "    \"windowBounds\": null,\n"
-            + "    \"logLevel\": \"info\"\n"
+            + "    \"logLevel\": \"information\"\n"
             + "  },\n"
             + "  \"rules\": []\n"
             + "}\n",
@@ -784,18 +806,18 @@ public static class ConfigStoreTests
         var log = new RecordingLog();
 
         NewStore(dir, log).Load();
-        Assert.True(log.Has(LogLevel.Info, "no config.json found, starting with defaults"),
-            "config.missing is info");
+        Assert.True(log.Has(LogLevel.Information, "no config.json found, starting with defaults"),
+            "config.missing is information");
 
         Write(dir, """{ "rules": [ { "exeName": "a.exe", "threads": [0] } ] }""");
         NewStore(dir, log).Load();
-        Assert.True(log.Has(LogLevel.Warn, "rule at index 0 skipped: missing/invalid id"),
-            "config.rule-skipped is warn");
+        Assert.True(log.Has(LogLevel.Warning, "rule at index 0 skipped: missing/invalid id"),
+            "config.rule-skipped is warning");
 
         Write(dir, $$"""{ "rules": [ { "id": "{{IdA}}", "exeName": "a.exe", "threads": [0] } ] }""");
         NewStore(dir, log).Load();
-        Assert.True(log.Has(LogLevel.Info, "config.json loaded, 1 rules, schemaVersion 1"),
-            "config.loaded is info");
+        Assert.True(log.Has(LogLevel.Information, "config.json loaded, 1 rules, schemaVersion 1"),
+            "config.loaded is information");
         Assert.True(log.Has(LogLevel.Debug, "config.skipped.json removed, no rules skipped on this load"),
             "config.skipped-file-removed is debug");
     }

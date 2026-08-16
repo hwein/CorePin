@@ -56,7 +56,7 @@ internal sealed class RuleRelease(IAffinityAccess access, ILog log, PinList pins
                 }
 
                 pins.Remove(pid);
-                log.Info("engine", $"rule '{entry.ExeName}': released PID {pid} ({TextOf(reason)})");
+                log.Information("engine", $"rule '{entry.ExeName}': released PID {pid} ({TextOf(reason)})");
             }
         }
 
@@ -67,8 +67,8 @@ internal sealed class RuleRelease(IAffinityAccess access, ILog log, PinList pins
     {
         pins.Remove(pid);
         failed.Add(pid);
-        log.Warn("engine", $"rule '{entry.ExeName}': failed to release PID {pid}, " +
-                           $"Win32 {win32Error} {Win32ErrorNames.Of(win32Error)} — process remains pinned");
+        log.Error("engine", $"rule '{entry.ExeName}': failed to release PID {pid}, " +
+                            $"Win32 {win32Error} {Win32ErrorNames.Of(win32Error)} — process remains pinned");
     }
 
     private static string TextOf(ReleaseReason reason) => reason switch

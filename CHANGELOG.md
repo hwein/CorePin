@@ -22,3 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rules are now applied: a program listed in `config.json` is pinned to its cores within a
   second, whether it starts later or is already running, and is pinned again if something
   else changes its affinity.
+
+### Changed
+
+- The log uses the standard .NET levels `trace`, `debug`, `information`, `warning`, `error`
+  and `critical`. A real failure is now separated from a handled oddity: a watcher that
+  gives up is `critical`, a release or a config write that fails is `error`. The old
+  `settings.logLevel` values `info` and `warn` keep working.

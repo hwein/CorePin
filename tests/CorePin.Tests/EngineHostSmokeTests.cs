@@ -36,7 +36,7 @@ public static class EngineHostSmokeTests
 
         Assert.Equal(Machine, f.Access.CurrentMask(100), "Stop is a queue command, so the release still ran");
         Assert.Equal(0, f.Engine.PinnedProcessCount, "and emptied the pin list");
-        Assert.True(f.Log.Has(LogLevel.Info, "watcher stopped"), "the thread ended within its deadline");
+        Assert.True(f.Log.Has(LogLevel.Information, "watcher stopped"), "the thread ended within its deadline");
     }
 
     public static void Test_Smoke2_TwentyCommandsLeadToOneApplicationAndNoEnumeration()
@@ -83,8 +83,8 @@ public static class EngineHostSmokeTests
         Assert.Equal(1, raised, "Faulted is raised exactly once");
         Assert.Equal(MaxFailures, reported, "after ten consecutive failures");
         Assert.Equal(MaxFailures, f.Log.Count("pass failed"), "every failed pass is logged");
-        Assert.True(f.Log.Has(LogLevel.Warn, "watcher gave up after 10 consecutive failures, monitoring stopped"),
-            "and the last line says the watching stopped");
+        Assert.True(f.Log.Has(LogLevel.Critical, "watcher gave up after 10 consecutive failures, monitoring stopped"),
+            "the application no longer does what it exists for, so the last line is critical");
     }
 
     public static void Test_ASuccessfulPassResetsTheFailureCounter()
@@ -111,7 +111,7 @@ public static class EngineHostSmokeTests
 
         Assert.Equal(0, raised, "nine failures, one good pass and nine more are never ten in a row");
         Assert.Equal(2, f.Log.Count("pass failed (1)"), "the counter started over at the good pass");
-        Assert.True(!f.Log.Has(LogLevel.Warn, "watcher gave up"), "so the watcher never gave up");
+        Assert.True(!f.Log.Has(LogLevel.Critical, "watcher gave up"), "so the watcher never gave up");
     }
 
     public static void Test_NoStoppedLineAfterTheWatcherGaveUp()
@@ -129,9 +129,9 @@ public static class EngineHostSmokeTests
 
         f.Host.Stop();
 
-        Assert.True(!f.Log.Has(LogLevel.Info, "watcher stopped"),
+        Assert.True(!f.Log.Has(LogLevel.Information, "watcher stopped"),
             "a watcher that gave up is not stopped in an orderly way");
-        Assert.True(!f.Log.Has(LogLevel.Warn, "did not stop within"), "and its thread had ended all the same");
+        Assert.True(!f.Log.Has(LogLevel.Warning, "did not stop within"), "and its thread had ended all the same");
     }
 
     public static void Test_Smoke4_AllThreadsDuringARunningDeadlineReleasesWithoutPinningAgain()

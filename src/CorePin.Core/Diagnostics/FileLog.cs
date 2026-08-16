@@ -53,7 +53,7 @@ public sealed class FileLog : ILog, IDisposable
         string resolved = LogFileWriter.ResolveDirectory(logDirectory, out bool usedFallback);
         var log = new FileLog(resolved, minimum, clock, limits, writerGate);
         if (usedFallback)
-            log.Warn("app", "primary log location unavailable, using fallback location");
+            log.Warning("app", "primary log location unavailable, using fallback location");
         return log;
     }
 
@@ -156,7 +156,7 @@ public sealed class FileLog : ILog, IDisposable
         int dropped = Interlocked.Exchange(ref _dropped, 0);
         if (dropped > 0)
         {
-            _files.Write(FormatLine(new LogEntry(_clock.UtcNow, LogLevel.Warn, "app",
+            _files.Write(FormatLine(new LogEntry(_clock.UtcNow, LogLevel.Warning, "app",
                 $"log queue overflow, {dropped} lines dropped since last report")));
         }
         _files.Flush();
@@ -167,9 +167,12 @@ public sealed class FileLog : ILog, IDisposable
         string timestamp = entry.TimestampUtc.ToString("yyyy-MM-ddTHH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
         string level = entry.Level switch
         {
+            LogLevel.Trace => "TRACE",
             LogLevel.Debug => "DEBUG",
-            LogLevel.Info => "INFO ",
-            LogLevel.Warn => "WARN ",
+            LogLevel.Information => "INFO ",
+            LogLevel.Warning => "WARN ",
+            LogLevel.Error => "ERROR",
+            LogLevel.Critical => "CRIT ",
             _ => "?????",
         };
         return $"{timestamp} {level} {entry.Category.PadRight(8)} {Escape(entry.Message)}";

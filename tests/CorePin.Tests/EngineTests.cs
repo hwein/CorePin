@@ -18,7 +18,7 @@ public static class EngineTests
     private static readonly Guid IdA = new("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid IdB = new("bbbbbbbb-0000-0000-0000-000000000002");
 
-    private const string TransitionLine = "Info engine rule 'a.exe':";
+    private const string TransitionLine = "Information engine rule 'a.exe':";
 
     public static void Test_T01_DeleteIsNotLostAgainstARunningTick()
     {
@@ -140,7 +140,7 @@ public static class EngineTests
 
         Assert.Equal(FirstHalf, f.Access.CurrentMask(100), "the reset goes to the process system mask");
         Assert.True(f.Access.SetCalls[^1].Mask != Machine, "and not to the machine mask");
-        Assert.True(f.Log.Has(LogLevel.Info, "rule 'a.exe': released PID 100 (disabled)"),
+        Assert.True(f.Log.Has(LogLevel.Information, "rule 'a.exe': released PID 100 (disabled)"),
             "the release line names the reason");
     }
 
@@ -155,7 +155,7 @@ public static class EngineTests
 
         Assert.Equal(1, f.Access.SetCalls.Count, "the foreign process is not touched");
         Assert.Equal(0, f.Engine.PinnedProcessCount, "the entry is dropped all the same");
-        Assert.True(!f.Log.Has(LogLevel.Warn), "a recycled PID is not a failure, so no warning is written at all");
+        Assert.True(!f.Log.Has(LogLevel.Warning), "a recycled PID is not a failure, so no warning is written at all");
         Assert.True(f.Log.Has(LogLevel.Debug, "PID 100 start time mismatch, treated as different process"),
             "it is logged as what it is");
     }
@@ -213,7 +213,7 @@ public static class EngineTests
 
         Assert.Equal(RuleState.NoRestriction, status.State, "a running process with all threads is no restriction");
         Assert.Equal(2, f.Access.SetCalls.Count, "pin and reset, no second pin");
-        Assert.True(f.Log.Has(LogLevel.Info, "released PID 100 (all threads selected)"),
+        Assert.True(f.Log.Has(LogLevel.Information, "released PID 100 (all threads selected)"),
             "the release line names the reason");
 
         f.Inventory.Remove(100);
@@ -337,9 +337,9 @@ public static class EngineTests
         Assert.Equal(RuleState.Blocked, afterRelease.State, "a failed release outranks Disabled");
         Assert.Equal(BlockReason.BlockedByWindows, afterRelease.Reason, "Windows refused the change");
         Assert.Equal(1, afterRelease.MatchedProcesses - afterRelease.AffectedProcesses, "one of one is still pinned");
-        Assert.True(f.Log.Has(LogLevel.Warn,
+        Assert.True(f.Log.Has(LogLevel.Error,
             "rule 'a.exe': failed to release PID 100, Win32 87 INVALID_PARAMETER — process remains pinned"),
-            "the failed release is a warning");
+            "the failed release is an error");
 
         Assert.Equal(RuleState.Blocked, f.Engine.Tick(disabled)[0].State, "a tick leaves that standing");
 
@@ -423,7 +423,7 @@ public static class EngineTests
 
         Assert.Equal(RuleState.Disabled, f.Engine.ApplyRule(disabled, IdA)[0].State,
             "Removed drops the failed-release memory");
-        Assert.True(f.Log.Has(LogLevel.Info, "rule 'a.exe': Idle -> Disabled"),
+        Assert.True(f.Log.Has(LogLevel.Information, "rule 'a.exe': Idle -> Disabled"),
             "and the logged state with it: the next observation is a first sighting, not Applied -> Disabled");
 
         var g = new Fixture();
@@ -436,7 +436,7 @@ public static class EngineTests
 
         Assert.Equal(RuleState.Disabled, g.Engine.ApplyRule(disabled, IdA)[0].State,
             "a rule that vanishes without a command is caught by the tick");
-        Assert.True(g.Log.Has(LogLevel.Info, "rule 'a.exe': Idle -> Disabled"),
+        Assert.True(g.Log.Has(LogLevel.Information, "rule 'a.exe': Idle -> Disabled"),
             "including its logged state");
     }
 
@@ -478,7 +478,7 @@ public static class EngineTests
         f.Engine.Tick(rules);
 
         Assert.Equal(2, f.Log.Count(TransitionLine), "a changed count writes a second line");
-        Assert.True(f.Log.Has(LogLevel.Info, "rule 'a.exe': Blocked (1 of 2 -> 2 of 3)"),
+        Assert.True(f.Log.Has(LogLevel.Information, "rule 'a.exe': Blocked (1 of 2 -> 2 of 3)"),
             "a pure count change uses the count format instead of Blocked -> Blocked");
     }
 
@@ -501,7 +501,7 @@ public static class EngineTests
         f.Engine.ApplyRule(rules, IdA);
 
         Assert.Equal(before + 1, f.Log.Count(TransitionLine), "past IdleHysteresisMs the Idle line appears");
-        Assert.True(f.Log.Has(LogLevel.Info, "rule 'a.exe': Applied -> Idle"), "and names the transition");
+        Assert.True(f.Log.Has(LogLevel.Information, "rule 'a.exe': Applied -> Idle"), "and names the transition");
     }
 
     public static void Test_T28_ProcessingOrderIsAscendingByPid()
@@ -552,7 +552,7 @@ public static class EngineTests
         arm(f);
         f.Engine.Release(IdA, ReleaseReason.Disabled);
 
-        Assert.True(f.Log.Has(LogLevel.Warn,
+        Assert.True(f.Log.Has(LogLevel.Error,
             $"failed to release PID 100, Win32 {win32Error} {name} — process remains pinned"),
             $"a release failing at Win32 {win32Error} is treated like a failing set");
         Assert.Equal(0, f.Engine.PinnedProcessCount, "the entry is dropped in every failure case");

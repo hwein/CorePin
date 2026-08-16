@@ -1,3 +1,3 @@
 namespace CorePin.Core.Diagnostics;
 
-public enum LogLevel { Debug = 0, Info = 1, Warn = 2 }
+public enum LogLevel { Trace = 0, Debug = 1, Information = 2, Warning = 3, Error = 4, Critical = 5 }

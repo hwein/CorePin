@@ -27,14 +27,14 @@ internal sealed class RuleReader(ILog log)
             try { dto = element.Deserialize(ConfigJsonContext.Default.RuleJson); }
             catch (JsonException)
             {
-                log.Warn("config", $"rule at index {i} skipped: malformed entry");
+                log.Warning("config", $"rule at index {i} skipped: malformed entry");
                 skippedRaw.Add(element);
                 continue;
             }
 
             if (!TryValidate(dto, out var rule, out string reason))
             {
-                log.Warn("config", $"rule at index {i} skipped: {reason}");
+                log.Warning("config", $"rule at index {i} skipped: {reason}");
                 skippedRaw.Add(element);
                 continue;
             }
@@ -42,13 +42,13 @@ internal sealed class RuleReader(ILog log)
             // File order decides: on a duplicate id or exeName the FIRST rule wins.
             if (idToExeName.ContainsKey(rule.Id))
             {
-                log.Warn("config", $"rule '{rule.ExeName}' skipped: duplicate id {rule.Id}");
+                log.Warning("config", $"rule '{rule.ExeName}' skipped: duplicate id {rule.Id}");
                 skippedRaw.Add(element);
                 continue;
             }
             if (exeNameToFirstId.TryGetValue(rule.ExeName, out var firstId))
             {
-                log.Warn("config",
+                log.Warning("config",
                     $"rule '{rule.ExeName}' skipped: duplicate exeName, rule {firstId} already covers this program");
                 skippedRaw.Add(element);
                 continue;
@@ -90,7 +90,7 @@ internal sealed class RuleReader(ILog log)
         {
             if ((uint)thread > MaxThreadIndex)
             {
-                log.Warn("config", $"rule '{exeName}': thread index {thread} out of range, dropped");
+                log.Warning("config", $"rule '{exeName}': thread index {thread} out of range, dropped");
                 continue;
             }
             kept.Add(thread);

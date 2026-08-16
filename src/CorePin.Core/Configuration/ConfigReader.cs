@@ -78,7 +78,7 @@ internal sealed class ConfigReader(ILog log)
         }
 
         if (names.Count > 0)
-            log.Warn("config", $"unknown field(s) ignored: {string.Join(", ", names)}");
+            log.Warning("config", $"unknown field(s) ignored: {string.Join(", ", names)}");
     }
 
     private enum RawIntKind { Missing, Value, WrongType }
@@ -149,20 +149,26 @@ internal sealed class ConfigReader(ILog log)
         if (value >= MinPollIntervalMs && value <= MaxPollIntervalMs) return value;
 
         int clamped = value < MinPollIntervalMs ? MinPollIntervalMs : MaxPollIntervalMs;
-        log.Warn("config", $"pollIntervalMs {value} out of range, clamped to {clamped}");
+        log.Warning("config", $"pollIntervalMs {value} out of range, clamped to {clamped}");
         return clamped;
     }
 
     private LogLevel ReadLogLevel(string? value)
     {
-        if (value is null) return LogLevel.Info;
+        if (value is null) return LogLevel.Information;
+        if (string.Equals(value, "trace", StringComparison.OrdinalIgnoreCase)) return LogLevel.Trace;
         if (string.Equals(value, "debug", StringComparison.OrdinalIgnoreCase)) return LogLevel.Debug;
-        if (string.Equals(value, "info", StringComparison.OrdinalIgnoreCase)) return LogLevel.Info;
-        if (string.Equals(value, "warn", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warn;
+        if (string.Equals(value, "information", StringComparison.OrdinalIgnoreCase)) return LogLevel.Information;
+        if (string.Equals(value, "info", StringComparison.OrdinalIgnoreCase)) return LogLevel.Information;
+        if (string.Equals(value, "warning", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warning;
+        if (string.Equals(value, "warn", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warning;
+        if (string.Equals(value, "error", StringComparison.OrdinalIgnoreCase)) return LogLevel.Error;
+        if (string.Equals(value, "critical", StringComparison.OrdinalIgnoreCase)) return LogLevel.Critical;
 
-        log.Warn("config",
-            $"settings.logLevel '{value}' is not a valid level (debug|info|warn), using info");
-        return LogLevel.Info;
+        log.Warning("config",
+            $"settings.logLevel '{value}' is not a valid level "
+            + "(trace|debug|information|warning|error|critical), using information");
+        return LogLevel.Information;
     }
 
     private WindowBounds? ReadWindowBounds(WindowBoundsJson? bounds)
@@ -171,7 +177,7 @@ internal sealed class ConfigReader(ILog log)
 
         if (bounds.W < MinWindowWidth || bounds.H < MinWindowHeight)
         {
-            log.Warn("config", $"windowBounds {bounds.W}x{bounds.H} below minimum size, discarded");
+            log.Warning("config", $"windowBounds {bounds.W}x{bounds.H} below minimum size, discarded");
             return null;
         }
         return new WindowBounds(bounds.X, bounds.Y, bounds.W, bounds.H);

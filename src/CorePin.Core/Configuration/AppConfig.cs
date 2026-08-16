@@ -14,7 +14,7 @@ public sealed record Settings
     /// Read and written, but NOT evaluated in v0.1.
     public string StartWithWindows { get; init; } = "normal";
 
-    public LogLevel LogLevel { get; init; } = LogLevel.Info;
+    public LogLevel LogLevel { get; init; } = LogLevel.Information;
 
     public WindowBounds? WindowBounds { get; init; }
 }
