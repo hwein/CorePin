@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>      <!-- NOT -windows: S01 §2.2, boundary 1+2 -->
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>CorePin.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

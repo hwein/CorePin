@@ -1,0 +1,20 @@
+<!-- ThemeMode sits on the Application, not on the Window: a Popup and a ToolTip live in their
+     own visual trees with their own HWND and do not inherit Window.ThemeMode — measured on the
+     G0 prototype. Declarative in XAML only, never assigned in code (S03 §12 D18). -->
+<Application x:Class="CorePin.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ThemeMode="System">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Themes/Tokens.xaml"/>
+        <!-- Gate G0 picked path A and needed no brush overrides, so Themes/Overrides.xaml
+             (S03 §4.6) does not exist and is not merged; it is created once a concrete
+             need shows up. -->
+        <!-- No third static entry here — ThemeController.Initialize (S03 §6.4) merges the
+             theme slot as a held instance, never through an index. -->
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

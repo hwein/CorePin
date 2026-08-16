@@ -1,0 +1,17 @@
+<Window x:Class="CorePin.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CorePin"
+        Width="660" Height="480"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Background="{DynamicResource CorePin.Brush.WindowBackground}">
+  <!-- Gate G0: empty window. The single line shows that the font tokens apply. No Foreground:
+       under path A stock controls keep Fluent's own text colour, CorePin.Brush.Text* is for
+       self-drawn surfaces only (S03 §4.5). -->
+  <TextBlock Margin="{StaticResource CorePin.Thickness.16}"
+             VerticalAlignment="Top"
+             FontFamily="{StaticResource CorePin.Font.UI}"
+             FontSize="{StaticResource CorePin.FontSize.UI}"
+             Text="CorePin"/>
+</Window>

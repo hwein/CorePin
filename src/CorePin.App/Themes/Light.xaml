@@ -1,0 +1,15 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Color x:Key="CorePin.Color.WindowBackground">#FAFAFA</Color>
+  <Color x:Key="CorePin.Color.CardBackground">#FFFFFF</Color>
+  <Color x:Key="CorePin.Color.TextPrimary">#1B1B1B</Color>
+  <Color x:Key="CorePin.Color.TextSecondary">#5F5F5F</Color>
+  <Color x:Key="CorePin.Color.Border">#E1E1E1</Color>
+
+  <SolidColorBrush x:Key="CorePin.Brush.WindowBackground" Color="{StaticResource CorePin.Color.WindowBackground}"/>
+  <SolidColorBrush x:Key="CorePin.Brush.CardBackground"   Color="{StaticResource CorePin.Color.CardBackground}"/>
+  <SolidColorBrush x:Key="CorePin.Brush.TextPrimary"      Color="{StaticResource CorePin.Color.TextPrimary}"/>
+  <SolidColorBrush x:Key="CorePin.Brush.TextSecondary"    Color="{StaticResource CorePin.Color.TextSecondary}"/>
+  <SolidColorBrush x:Key="CorePin.Brush.Border"           Color="{StaticResource CorePin.Color.Border}"/>
+</ResourceDictionary>

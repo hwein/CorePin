@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CorePin.Tests</AssemblyName>
+    <!-- CA1707 demands member names without underscores; S01 §5.1 makes the prefix "Test_"
+         the runner's discovery rule. Disabled in this project only. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CorePin.Core\CorePin.Core.csproj" />
+  </ItemGroup>
+</Project>
