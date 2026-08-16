@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using CorePin.Core.Configuration;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Paths;
 using CorePin.Core.Platform;
@@ -59,7 +60,7 @@ internal static class Program
         }
         catch (Exception ex) { MessageBoxes.ShowTopologyReadFailed(ex); return 4; }
 
-        // 2. Single instance arrives with S08; steps 4/4b (configuration) with S05.
+        // 2. Single instance arrives with S08.
         // 3. Log file.
         using var log = FileLog.Create(paths.LogDirectory,
                                        opts.LogLevelOverride ?? LogLevel.Info, clock);
@@ -80,10 +81,10 @@ internal static class Program
         if (opts.InvalidLogLevelValue is { } bad)
             log.Warn("app", $"unknown --log-level value '{bad}' ignored, config.json applies");  // app.log-level-invalid
 
+        var guard = WriteGuard.Open;
 #if DEBUG
         // 3b. Second safeguard of the debug switch, only here: it needs the logger and the
         //     REAL processor count that the fixture path replaced (S01 §5.6, N3).
-        //     The WriteGuard.NoPersist part arrives with S05.
         if (opts.DebugTopologyFile is not null)
         {
             log.Warn("app",
@@ -103,12 +104,20 @@ internal static class Program
                 MessageBoxes.ShowFixtureTooLarge(topology.LogicalProcessorCount, real);
                 return 5;
             }
+            //     First of the two safeguards of S01 §5.6: the session may pin and edit,
+            //     it may not persist rules built against foreign hardware.
+            guard = WriteGuard.Strictest(guard, WriteGuard.NoPersist);
         }
         if (opts.DebugGroupCount is { } groups)
             log.Warn("app", string.Create(CultureInfo.InvariantCulture,
                 $"debug switch active: --debug-groups {groups}"));                       // app.debug-switch-active
 #endif
 
+        // 4. Load the configuration.
+        var config = new ConfigStore(paths.ConfigDirectory, log, clock);
+        var loaded = config.Load();
+
+        //    --log-level wins for the whole session; otherwise settings.logLevel applies (C-3).
         if (opts.LogLevelOverride is { } forced)
         {
             log.Minimum = forced;
@@ -118,11 +127,30 @@ internal static class Program
         }
         else
         {
-            log.Minimum = LogLevel.Info;
+            log.Minimum = loaded.Config.Settings.LogLevel;
+        }
+
+        if (loaded.Outcome == ConfigLoadOutcome.TooNew)
+            guard = WriteGuard.Strictest(guard, WriteGuard.ReadOnly);
+        if (loaded.Outcome == ConfigLoadOutcome.Unreadable)
+            guard = WriteGuard.Strictest(guard, WriteGuard.Unreadable);
+        if (!guard.CanPersist)
+            config.BlockWrites(guard.Reason);
+
+        // 4b. logicalProcessors comparison (02 §6). ONLY here, because only this place knows
+        //     the loaded number and the measured topology at the same time. The source is
+        //     loaded.RawRules — loaded.Config.Rules is ALWAYS empty (S01 §3.6, Ä-3).
+        var rules = loaded.RawRules;
+        if (loaded.Config.Machine.LogicalProcessors != topology.LogicalProcessorCount)
+        {
+            rules = rules.MarkAllForReview();
+            log.Warn("config", string.Create(CultureInfo.InvariantCulture,                // config.lp-changed
+                $"logicalProcessors changed: {loaded.Config.Machine.LogicalProcessors} -> {topology.LogicalProcessorCount}, all rules marked Needs review"));
         }
 
         // The App constructor stays parameterless until something below it reads the
-        // topology (S09/S10); a parameter nobody reads would be invented surface.
+        // topology (S09/S10); a parameter nobody reads would be invented surface. `rules`
+        // and `guard` are therefore built here but not yet handed on — S09 wires them.
         var app = new App();
         app.InitializeComponent();                   // loads App.xaml (resources, S03)
         try

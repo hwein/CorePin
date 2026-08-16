@@ -15,3 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The log records the detected processor clusters, their labels and cache sizes at startup.
 - Startup is refused with an explanatory message on systems with more than one processor
   group.
+- Rules and settings are read from `%LOCALAPPDATA%\CorePin\config.json` at startup. The
+  file may be edited by hand and tolerates comments and trailing commas.
+- A single malformed rule is skipped and listed in `config.skipped.json` instead of
+  discarding the whole file; an unreadable file is renamed aside and startup continues.
