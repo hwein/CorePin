@@ -1,6 +1,6 @@
 namespace CorePin.Core.Rules;
 
-/// Immutable, copied on construction (S01 §3.4).
+/// Immutable, copied on construction.
 public sealed class RuleSet
 {
     private readonly List<Rule> _rules;
@@ -30,6 +30,6 @@ public sealed class RuleSet
 
     public RuleSet Without(Guid id) => new(_rules.Where(r => r.Id != id));
 
-    /// Sets NeedsReview on ALL rules (02 §6). Caller: only S01 §3.7, step 4b.
+    /// Only caller: the composition root, after a logicalProcessors change.
     public RuleSet MarkAllForReview() => new(_rules.Select(r => r with { NeedsReview = true }));
 }

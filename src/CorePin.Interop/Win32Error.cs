@@ -1,7 +1,6 @@
 namespace CorePin.Interop;
 
-/// The one canonical error-code file (S07 §14.2): every error-code constant that a
-/// CorePin native call can return stands here and nowhere else.
+/// Every Win32 error-code constant CorePin uses stands here and nowhere else.
 internal static class Win32Error
 {
     internal const int ACCESS_DENIED = 5;

@@ -10,8 +10,7 @@ public sealed class ThemeController
     private readonly List<Window> _registeredWindows = new();
     private bool _currentIsLight;
 
-    /// Subscribed by self-drawing controls (S10) to call InvalidateVisual on themselves —
-    /// ThemeController does not know CpuMapControl and never calls it directly.
+    /// Self-drawing controls subscribe to invalidate themselves; this class knows none.
     public event Action? ThemeApplied;
 
     public void Initialize(Application app)
@@ -23,8 +22,7 @@ public sealed class ThemeController
                                 // theme-dependent key throws on the first start.
     }
 
-    /// Every window that wants its title bar coloured registers itself — CorePin is a tray
-    /// tool, its window may exist long before or long after a theme change.
+    /// A tray tool's window may exist long before or long after a theme change.
     public void RegisterWindow(Window window)
     {
         window.SourceInitialized += (_, _) =>
@@ -35,11 +33,11 @@ public sealed class ThemeController
         window.Closed += (_, _) => _registeredWindows.Remove(window);
     }
 
-    /// Call target for S08 (S03 §6.2), UI thread only.
+    /// UI thread only.
     public void OnSystemThemeChanged()
     {
         bool isLight = ThemeSettings.ReadAppUsesLightTheme();
-        if (isLight == _currentIsLight) return;      // no redraw without a real change
+        if (isLight == _currentIsLight) return;
         ApplyTheme(isLight);
     }
 

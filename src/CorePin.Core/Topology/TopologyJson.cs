@@ -5,19 +5,10 @@ using System.Text.Json;
 
 namespace CorePin.Core.Topology;
 
-/// The one serializer/parser for the dump format (S04 §3.1). Output is canonical
-/// (S04 §3.4), input is tolerant (S04 §3.6).
+/// The one serializer/parser for the dump format. Output is canonical, input is tolerant.
 public static class TopologyJson
 {
-    /// Serialize builds the document text with a StringBuilder — the fallback S04 T-A6 names
-    /// for the case that Utf8JsonWriter.WriteRawValue does not indent. MEASURED: it does not.
-    /// In indented mode it puts every raw element of an array on ONE line, separated by
-    /// commas, so the canonical form of S04 §3.4 (one record per line, two-space indent) is
-    /// unreachable through it. Assembling the text keeps LF, the indent and the field order
-    /// properties of this code instead of properties of the writer — which is what
-    /// criterion 13 needs.
-    /// Only the three free-text fields go through JSON escaping, with the encoder S01 §3.2
-    /// declares binding (the default encoder would mask "+", "&" and "<").
+    /// The default encoder would mask "+", "&" and "<"; only free-text fields are escaped.
     private static readonly JavaScriptEncoder Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
     private static readonly JsonDocumentOptions ReaderOptions = new()
@@ -30,6 +21,7 @@ public static class TopologyJson
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
+        // MEASURED: Utf8JsonWriter.WriteRawValue does not indent, hence the StringBuilder.
         var text = new StringBuilder();
         text.Append("{\n");
         text.Append("  \"capturedBy\": \"").Append(Escape(snapshot.CapturedBy)).Append("\",\n");
@@ -42,7 +34,7 @@ public static class TopologyJson
         text.Append(",\n");
         AppendArray(text, "caches", snapshot.Caches.Select(CacheLine));
 
-        // Exactly one trailing "\n" makes file and clipboard comparable (S04 §3.4).
+        // Exactly one trailing "\n" makes file and clipboard comparable.
         text.Append("\n}\n");
         return text.ToString();
     }
@@ -178,8 +170,6 @@ public static class TopologyJson
         return result;
     }
 
-    /// Tolerant on input: with or without "0x", any length up to 16 digits, any case
-    /// (S04 §3.6). Written is always the canonical form.
     private static ulong ReadMask(JsonElement parent, string name, string path)
     {
         var value = Require(parent, name, path);

@@ -3,9 +3,7 @@ using System.Windows.Media;
 
 namespace CorePin.App.Themes;
 
-/// Typed access to the XAML tokens for self-drawing code (S03 §10.2). Every call reads
-/// live from Application.Current.Resources — a cached value would be a second truth
-/// beside the ResourceDictionary.
+/// Every call reads live from Application.Current.Resources — a cache would be a second truth.
 public static class Tokens
 {
     // Colours
@@ -18,9 +16,7 @@ public static class Tokens
     public static Color TextSecondary => Read<Color>("CorePin.Color.TextSecondary");
     public static Color Border => Read<Color>("CorePin.Color.Border");
 
-    // Accent: WPF's own source (S03 §5.3), not a Tokens.xaml key. WPF supplies a fallback
-    // (#0078D4) on every internal failure — no fallback of our own here, it would never
-    // be reached.
+    // Accent comes from WPF, which supplies its own fallback — ours would never be reached.
     public static Color Accent => SystemColors.AccentColor;
 
     // Type
@@ -32,8 +28,7 @@ public static class Tokens
     public static double FontSizeMono => Read<double>("CorePin.FontSize.Mono");
     public static FontWeight FontWeightHeading => Read<FontWeight>("CorePin.FontWeight.Heading");
 
-    // Grid, radii, hit targets — RadiusValue instead of Radius: S10 needs double, not
-    // CornerRadius (S03 §4.3).
+    // RadiusValue instead of Radius: self-drawing code needs double, not CornerRadius.
     public static double RadiusCoreCell => Read<double>("CorePin.RadiusValue.CoreCell");
     public static double Spacing4 => Read<double>("CorePin.Spacing.4");
     public static double Spacing8 => Read<double>("CorePin.Spacing.8");
@@ -49,10 +44,7 @@ public static class Tokens
                 "This error may only surface at startup (ValidateAll), never when a core " +
                 "cell is drawn for the first time.");
 
-    /// Called by ThemeController.Initialize AFTER ApplyTheme: reads every key once so a
-    /// missing or mistyped token surfaces as a hard startup error instead of an
-    /// InvalidCastException while redrawing the CPU map. Also checks that the
-    /// deliberately duplicated radius pairs carry the same value.
+    /// Reads every key once so a bad token fails at startup, not while the map is drawn.
     public static void ValidateAll()
     {
         _ = (StatusApplied, StatusBlocked, StatusIdle, CardBackground, WindowBackground,

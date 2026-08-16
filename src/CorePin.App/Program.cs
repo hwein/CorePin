@@ -19,10 +19,7 @@ internal static class Program
     [STAThread]
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Performance", "CA1859:Use concrete types when possible for improved performance",
-        Justification = "S01 §3.7 declares the topology source as the port type ITopologySource; "
-                      + "in a debug build the two #if DEBUG decorators reassign it. In a release "
-                      + "build the reassignments are gone, which is the only reason the analyzer "
-                      + "sees a concrete type here.")]
+        Justification = "The #if DEBUG decorators reassign this port type in a debug build.")]
     private static int Main(string[] args)
     {
         var opts = StartupOptions.Parse(args);
@@ -35,22 +32,17 @@ internal static class Program
         if (opts.DebugGroupCount is { } count) source = new GroupCountOverride(source, count);
 #endif
 
-        // 0. Dumper: before everything else. No WPF, no mutex, NO logger (NullLog), no
-        //    directory creation, no abort on more than one group.
+        // 0. Dumper: before everything else — no WPF, no mutex, no logger, no directories.
         if (opts.DumpTopology)
             return DumpTopologyCommand.Run(source, opts, NullLog.Instance);
 
-        // 1. Topology. A read failure is the only startup failure without a log and without
-        //    a window. The try block reaches BEYOND ClusterBuilder.Build (S04 T-O14): a
-        //    TopologyFormatException from the cluster building gets the same message box and
-        //    exit code 4 instead of the Windows crash dialog.
+        // 1. Topology. The try reaches BEYOND Build: a format error gets the same box, code 4.
         CpuTopology topology;
         try
         {
             var snapshot = source.Read();
 
-            //    Abort on more than one processor group (02 §4.5) — via MessageBoxW, so WPF
-            //    is never initialised and nothing is written, not even a log file.
+            //    Via MessageBoxW: WPF is never initialised and nothing is written.
             if (snapshot.ActiveGroupCount > 1)
             {
                 MessageBoxes.ShowGroupLimit(snapshot);
@@ -60,70 +52,64 @@ internal static class Program
         }
         catch (Exception ex) { MessageBoxes.ShowTopologyReadFailed(ex); return 4; }
 
-        // 2. Single instance arrives with S08.
-        // 3. Log file.
+        // 2. Single instance is not implemented yet.
         using var log = FileLog.Create(paths.LogDirectory,
                                        opts.LogLevelOverride ?? LogLevel.Info, clock);
 
         log.WriteAlways(LogLevel.Info, "app",
-            $"CorePin {Version()} starting (flags: {FlagNames(opts)})");                 // app.start
-        log.WriteAlways(LogLevel.Info, "topology", Summarize(topology));                 // topology.summary
+            $"CorePin {Version()} starting (flags: {FlagNames(opts)})");
+        log.WriteAlways(LogLevel.Info, "topology", Summarize(topology));
         if (log.IsEnabled(LogLevel.Debug))
-            log.Debug("topology", FullDump(topology));                                   // topology.dump
+            log.Debug("topology", FullDump(topology));
 
-        //    Warnings of the topology source (S04 §2.7, T-O4). The source ran in step 0,
-        //    before the logger — it collected them instead of writing them. Passed through
-        //    unchanged and in the order of occurrence.
-        foreach (var w in source.Warnings) log.Warn("topology", w);                      // topology.source-warning
+        //    The source ran before the logger and collected these instead of writing them.
+        foreach (var w in source.Warnings) log.Warn("topology", w);
 
         foreach (var a in opts.Unknown)
-            log.Warn("app", $"unknown argument '{a}' ignored");                          // app.unknown-argument
+            log.Warn("app", $"unknown argument '{a}' ignored");
         if (opts.InvalidLogLevelValue is { } bad)
-            log.Warn("app", $"unknown --log-level value '{bad}' ignored, config.json applies");  // app.log-level-invalid
+            log.Warn("app", $"unknown --log-level value '{bad}' ignored, config.json applies");
 
         var guard = WriteGuard.Open;
 #if DEBUG
-        // 3b. Second safeguard of the debug switch, only here: it needs the logger and the
-        //     REAL processor count that the fixture path replaced (S01 §5.6, N3).
+        // 3b. Only here: this safeguard needs the logger and the REAL processor count.
         if (opts.DebugTopologyFile is not null)
         {
             log.Warn("app",
-                $"debug switch active: --debug-topology {Path.GetFileName(opts.DebugTopologyFile)}");  // app.debug-switch-active
+                $"debug switch active: --debug-topology {Path.GetFileName(opts.DebugTopologyFile)}");
             int real;
             try { real = ClusterBuilder.Build(new Win32TopologySource().Read()).LogicalProcessorCount; }
             catch (Exception ex)
             {
-                log.Warn("app", $"real topology unreadable: {ex}");                      // app.debug-topology-unreadable
+                log.Warn("app", $"real topology unreadable: {ex}");
                 MessageBoxes.ShowTopologyReadFailed(ex);
                 return 4;
             }
             if (topology.LogicalProcessorCount > real)
             {
                 log.Warn("app", string.Create(CultureInfo.InvariantCulture,
-                    $"fixture reports {topology.LogicalProcessorCount} LP, machine has {real} — switch rejected"));  // app.debug-fixture-too-large
+                    $"fixture reports {topology.LogicalProcessorCount} LP, machine has {real} — switch rejected"));
                 MessageBoxes.ShowFixtureTooLarge(topology.LogicalProcessorCount, real);
                 return 5;
             }
-            //     First of the two safeguards of S01 §5.6: the session may pin and edit,
-            //     it may not persist rules built against foreign hardware.
+            //     Must not persist rules built against foreign hardware.
             guard = WriteGuard.Strictest(guard, WriteGuard.NoPersist);
         }
         if (opts.DebugGroupCount is { } groups)
             log.Warn("app", string.Create(CultureInfo.InvariantCulture,
-                $"debug switch active: --debug-groups {groups}"));                       // app.debug-switch-active
+                $"debug switch active: --debug-groups {groups}"));
 #endif
 
         // 4. Load the configuration.
         var config = new ConfigStore(paths.ConfigDirectory, log, clock);
         var loaded = config.Load();
 
-        //    --log-level wins for the whole session; otherwise settings.logLevel applies (C-3).
         if (opts.LogLevelOverride is { } forced)
         {
             log.Minimum = forced;
-            // Level names are written lower case (S02 §8.1), unlike the enum member.
+            // Level names are written lower case, unlike the enum member.
             log.WriteAlways(LogLevel.Info, "app",
-                $"--log-level {forced.ToString().ToLowerInvariant()} overrides config.json settings.logLevel for this session");  // app.log-level-override
+                $"--log-level {forced.ToString().ToLowerInvariant()} overrides config.json settings.logLevel for this session");
         }
         else
         {
@@ -137,37 +123,32 @@ internal static class Program
         if (!guard.CanPersist)
             config.BlockWrites(guard.Reason);
 
-        // 4b. logicalProcessors comparison (02 §6). ONLY here, because only this place knows
-        //     the loaded number and the measured topology at the same time. The source is
-        //     loaded.RawRules — loaded.Config.Rules is ALWAYS empty (S01 §3.6, Ä-3).
+        // 4b. The source is loaded.RawRules — loaded.Config.Rules is ALWAYS empty.
         var rules = loaded.RawRules;
         if (loaded.Config.Machine.LogicalProcessors != topology.LogicalProcessorCount)
         {
             rules = rules.MarkAllForReview();
-            log.Warn("config", string.Create(CultureInfo.InvariantCulture,                // config.lp-changed
+            log.Warn("config", string.Create(CultureInfo.InvariantCulture,
                 $"logicalProcessors changed: {loaded.Config.Machine.LogicalProcessors} -> {topology.LogicalProcessorCount}, all rules marked Needs review"));
         }
 
-        // The App constructor stays parameterless until something below it reads the
-        // topology (S09/S10); a parameter nobody reads would be invented surface. `rules`
-        // and `guard` are therefore built here but not yet handed on — S09 wires them.
+        // `rules` and `guard` are built here but not yet handed on to App.
         var app = new App();
-        app.InitializeComponent();                   // loads App.xaml (resources, S03)
+        app.InitializeComponent();
         try
         {
-            app.Theme.Initialize(app);               // merge theme slot, validate tokens (S03)
+            app.Theme.Initialize(app);
         }
         catch (Exception ex)
         {
-            // A missing or mistyped token stays a hard startup error (S03 §10.2) — but the
-            // reason has to be in the log before the process goes down.
-            log.Warn("app", $"theme initialisation failed: {ex}");                       // app.theme-init-failed
+            // Fatal either way — but the reason has to be in the log first.
+            log.Warn("app", $"theme initialisation failed: {ex}");
             throw;
         }
 
         int exitCode = app.Run();
 
-        log.WriteAlways(LogLevel.Info, "app", $"CorePin exiting (code {exitCode})");     // app.exit
+        log.WriteAlways(LogLevel.Info, "app", $"CorePin exiting (code {exitCode})");
         return exitCode;
     }
 
@@ -177,13 +158,12 @@ internal static class Program
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         if (string.IsNullOrEmpty(informational)) return "0.0.0";
 
-        // The SDK appends "+<commit>" when a source revision is known — not part of the version.
+        // The SDK appends "+<commit>" when a source revision is known; not part of it.
         int plus = informational.IndexOf('+', StringComparison.Ordinal);
         return plus < 0 ? informational : informational[..plus];
     }
 
-    /// Flag names only, never values or paths (S02 §7.1). Derived from the PRESENCE of the
-    /// argument, not from a successful parse — an invalid value was still a passed flag.
+    /// Flag names only, never values or paths; derived from PRESENCE, not a successful parse.
     private static string FlagNames(StartupOptions opts)
     {
         var flags = new List<string>();
@@ -205,9 +185,7 @@ internal static class Program
             + $"{topology.Clusters.Count} clusters ({string.Join(", ", topology.Clusters.Select(c => c.Label))}) * "
             + $"{(topology.Profiling == ProfilingLevel.Profiled ? "profiled" : "not profiled")}");
 
-    /// Compact JSON of the CpuTopology for topology.dump (S02 §6). Deliberately built here
-    /// in the app layer and not as a CpuTopology serializer in CorePin.Core.Topology — a
-    /// reusable one would be a second format next to S04 §3.4 (S04 §10.5).
+    /// Deliberately NOT a serializer in CorePin.Core.Topology — that would be a second format.
     private static string FullDump(CpuTopology topology)
     {
         using var buffer = new MemoryStream();

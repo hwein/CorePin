@@ -11,8 +11,7 @@ using CorePin.Core.Time;
 
 namespace CorePin.Core.Configuration;
 
-/// Loads and writes %LOCALAPPDATA%\CorePin\config.json (S05). Load() never throws (§6.5),
-/// Save() never throws and is neither debounced nor asynchronous (§5, §10.1).
+/// Loads and writes config.json. Load() and Save() never throw; Save is not debounced.
 public sealed class ConfigStore
 {
     private const string FileName = "config.json";
@@ -28,12 +27,7 @@ public sealed class ConfigStore
 
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
-    /// 02 §6 sells hand-correctability as an advantage, and a lastKnownPath with umlauts is
-    /// barely readable for a human once every one of them is an escape sequence; TopologyJson
-    /// uses the same encoder for the same reason. [JsonSourceGenerationOptions] has no Encoder
-    /// property, so the option is carried in a second instance of the SAME generated context —
-    /// source generation, start-up time and trimmability (D1) stay intact (MEASURED: the
-    /// JsonSerializerOptions overload of Serialize warns IL2026/IL3050 instead).
+    /// No Encoder in [JsonSourceGenerationOptions]; the options overload warns IL2026/IL3050.
     private static readonly ConfigJsonContext WriteContext =
         new(new JsonSerializerOptions(ConfigJsonContext.Default.Options)
         {
@@ -65,20 +59,19 @@ public sealed class ConfigStore
         _clock = clock;
     }
 
-    /// Parameterless. The logicalProcessors comparison and the setting of Rule.NeedsReview
-    /// live in Program.Main, step 4b (S01 §3.7), NOT here. Never throws (S05 §6.5).
+    /// The logicalProcessors comparison and Rule.NeedsReview belong to the composition root.
     public ConfigLoadResult Load()
     {
         if (!TryEnsureDirectory())
         {
-            _log.Warn("config", "cannot create config directory, starting with in-memory defaults");   // config.dir-unavailable
+            _log.Warn("config", "cannot create config directory, starting with in-memory defaults");
             return Defaults(ConfigLoadOutcome.Missing);
         }
 
         string path = Path.Combine(_directory, FileName);
         if (!File.Exists(path))
         {
-            _log.Info("config", "no config.json found, starting with defaults");                       // config.missing
+            _log.Info("config", "no config.json found, starting with defaults");
             return Defaults(ConfigLoadOutcome.Missing);
         }
 
@@ -89,9 +82,8 @@ public sealed class ConfigStore
         }
         catch (Exception ex)
         {
-            // The file is there but could not be opened. It stays untouched — a Missing with
-            // a writable session would overwrite the real rules once the lock falls (§6.4).
-            _log.Warn("config",                                                                        // config.unreadable
+            // Untouched on purpose: a Missing here would later overwrite the real rules.
+            _log.Warn("config",
                 $"config.json exists but could not be opened ({ex.GetType().Name}), starting with defaults; changes will not be saved");
             return Defaults(ConfigLoadOutcome.Unreadable);
         }
@@ -115,8 +107,8 @@ public sealed class ConfigStore
 
         if (schemaVersion > MaxSchemaVersion)
         {
-            // The file is not touched at all (§7.1) — criterion 15 checks its timestamp.
-            _log.Warn("config",                                                                        // config.too-new
+            // The file is not touched at all — its timestamp must stay unchanged.
+            _log.Warn("config",
                 $"config.json schemaVersion {schemaVersion} is newer than supported ({MaxSchemaVersion}), UI is read-only");
             return new ConfigLoadResult(AppConfig.Empty(), RuleSet.Empty, ConfigLoadOutcome.TooNew,
                                         schemaVersion.ToString(CultureInfo.InvariantCulture), 0);
@@ -132,21 +124,19 @@ public sealed class ConfigStore
             SchemaVersion = schemaVersion,
             Machine = machine,
             Settings = settings,
-            Rules = RuleSet.Empty,          // always empty, structurally (§8.3)
+            Rules = RuleSet.Empty,          // always empty, structurally
         };
 
-        _log.Info("config", $"config.json loaded, {rules.Rules.Count} rules, schemaVersion {schemaVersion}");   // config.loaded
+        _log.Info("config", $"config.json loaded, {rules.Rules.Count} rules, schemaVersion {schemaVersion}");
         return new ConfigLoadResult(config, rules, ConfigLoadOutcome.Loaded, detail, skippedRaw.Count);
     }
 
-    /// Writes immediately and synchronously, atomically per 02 §12.2. NOT debounced.
-    /// Ineffective (with config.save-discarded) while BlockWrites is set.
-    /// PRECONDITION (§8.3): config.Rules must be built from the marked rule set.
+    /// PRECONDITION: config.Rules must come from the marked rule set. No-op while blocked.
     public void Save(AppConfig config)
     {
         if (!_guard.CanPersist)
         {
-            _log.Warn("config", $"save discarded: WriteGuard.{_guard.Reason} active");                 // config.save-discarded
+            _log.Warn("config", $"save discarded: WriteGuard.{_guard.Reason} active");
             return;
         }
         WriteWithRetry(config);
@@ -167,8 +157,7 @@ public sealed class ConfigStore
 
     private bool TryEnsureDirectory()
     {
-        // Idempotent, and called from Load() as well as Save() — AppPaths creates nothing
-        // (S05 §2.2). Any failure is a state, not an exception, for both callers.
+        // AppPaths creates nothing; a failure here is a state, not an exception.
         try { Directory.CreateDirectory(_directory); return true; }
         catch (Exception) { return false; }
     }
@@ -179,17 +168,16 @@ public sealed class ConfigStore
         try { File.Move(path, Path.Combine(_directory, name)); }
         catch (Exception)
         {
-            // Renaming needs write access of its own; if it fails the original file stays
-            // under its old name and the outcome is still Corrupt (§6.2/§6.5).
+            // If the rename fails, the file keeps its name and the outcome is still Corrupt.
         }
 
-        _log.Warn("config", $"config.json unreadable, renamed to {name}, starting with defaults");     // config.corrupt
+        _log.Warn("config", $"config.json unreadable, renamed to {name}, starting with defaults");
         return new ConfigLoadResult(AppConfig.Empty(), RuleSet.Empty, ConfigLoadOutcome.Corrupt, name, 0);
     }
 
     private string FreeCorruptName()
     {
-        // Local time: a user looking at the file places it faster (D10).
+        // Local time: a user looking at the file places it faster.
         string stamp = _clock.UtcNow.ToLocalTime().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         string candidate = $"config.corrupt-{stamp}.json";
         for (int suffix = 2; File.Exists(Path.Combine(_directory, candidate)); suffix++)
@@ -199,8 +187,7 @@ public sealed class ConfigStore
 
     private enum RawIntKind { Missing, Value, WrongType }
 
-    /// A missing key (Undefined) is NOT a type error — a hand-corrected file that carries
-    /// only settings.logLevel is the normal case of S02 §8.1, not corruption (§4.2).
+    /// A missing key (Undefined) is NOT a type error — a partial file is the normal case.
     private static RawIntKind ReadRawInt(JsonElement element, out int value)
     {
         switch (element.ValueKind)
@@ -236,7 +223,7 @@ public sealed class ConfigStore
             _ => throw new UnreachableException(),
         };
 
-        // cpuName is never checked, only displayed (02 §6).
+        // cpuName is never checked, only displayed.
         return new MachineInfo(machine.CpuName ?? "", logicalProcessors);
     }
 
@@ -266,7 +253,7 @@ public sealed class ConfigStore
         if (value >= MinPollIntervalMs && value <= MaxPollIntervalMs) return value;
 
         int clamped = value < MinPollIntervalMs ? MinPollIntervalMs : MaxPollIntervalMs;
-        _log.Warn("config", $"pollIntervalMs {value} out of range, clamped to {clamped}");             // config.poll-interval-clamped
+        _log.Warn("config", $"pollIntervalMs {value} out of range, clamped to {clamped}");
         return clamped;
     }
 
@@ -277,7 +264,7 @@ public sealed class ConfigStore
         if (string.Equals(value, "info", StringComparison.OrdinalIgnoreCase)) return LogLevel.Info;
         if (string.Equals(value, "warn", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warn;
 
-        _log.Warn("config",                                                                            // config.log-level-invalid
+        _log.Warn("config",
             $"settings.logLevel '{value}' is not a valid level (debug|info|warn), using info");
         return LogLevel.Info;
     }
@@ -286,17 +273,15 @@ public sealed class ConfigStore
     {
         if (bounds is null) return null;
 
-        // Discarded as a whole, not clamped field by field (§3.4).
         if (bounds.W < MinWindowWidth || bounds.H < MinWindowHeight)
         {
-            _log.Warn("config", $"windowBounds {bounds.W}x{bounds.H} below minimum size, discarded");  // config.window-bounds-discarded
+            _log.Warn("config", $"windowBounds {bounds.W}x{bounds.H} below minimum size, discarded");
             return null;
         }
         return new WindowBounds(bounds.X, bounds.Y, bounds.W, bounds.H);
     }
 
-    /// Top level and `settings` only — inside a rule a future additive field would warn on
-    /// every load of an old rule although nothing is wrong (§4.3).
+    /// Top level and `settings` only: a future additive field inside a rule must not warn.
     private void ReportUnknownFields(string text)
     {
         var names = new List<string>();
@@ -325,7 +310,7 @@ public sealed class ConfigStore
         }
 
         if (names.Count > 0)
-            _log.Warn("config", $"unknown field(s) ignored: {string.Join(", ", names)}");              // config.unknown-fields
+            _log.Warn("config", $"unknown field(s) ignored: {string.Join(", ", names)}");
     }
 
     private (RuleSet Rules, List<JsonElement> SkippedRaw) ParseRules(JsonElement[]? raw)
@@ -344,28 +329,28 @@ public sealed class ConfigStore
             try { dto = element.Deserialize(ConfigJsonContext.Default.RuleJson); }
             catch (JsonException)
             {
-                _log.Warn("config", $"rule at index {i} skipped: malformed entry");                    // config.rule-skipped
+                _log.Warn("config", $"rule at index {i} skipped: malformed entry");
                 skippedRaw.Add(element);
                 continue;
             }
 
             if (!TryValidate(dto, out var rule, out string reason))
             {
-                _log.Warn("config", $"rule at index {i} skipped: {reason}");                           // config.rule-skipped
+                _log.Warn("config", $"rule at index {i} skipped: {reason}");
                 skippedRaw.Add(element);
                 continue;
             }
 
-            // File order decides: on a duplicate id or exeName the FIRST rule wins (§3.5).
+            // File order decides: on a duplicate id or exeName the FIRST rule wins.
             if (idToExeName.ContainsKey(rule.Id))
             {
-                _log.Warn("config", $"rule '{rule.ExeName}' skipped: duplicate id {rule.Id}");         // config.rule-duplicate-id
+                _log.Warn("config", $"rule '{rule.ExeName}' skipped: duplicate id {rule.Id}");
                 skippedRaw.Add(element);
                 continue;
             }
             if (exeNameToFirstId.TryGetValue(rule.ExeName, out var firstId))
             {
-                _log.Warn("config",                                                                    // config.rule-duplicate-exename
+                _log.Warn("config",
                     $"rule '{rule.ExeName}' skipped: duplicate exeName, rule {firstId} already covers this program");
                 skippedRaw.Add(element);
                 continue;
@@ -388,8 +373,7 @@ public sealed class ConfigStore
         if (!Guid.TryParse(dto.Id, out var id)) { reason = "missing/invalid id"; return false; }
 
         string exeName = (dto.ExeName ?? string.Empty).Trim();
-        // S02 §6 lists four reasons for config.rule-skipped and none of them fits a missing
-        // or empty exeName; `malformed entry` is the only generic one of the four.
+        // `malformed entry` is the only one of the four skip reasons that fits an empty name.
         if (exeName.Length == 0) { reason = "malformed entry"; return false; }
 
         bool enabled;
@@ -408,7 +392,7 @@ public sealed class ConfigStore
         {
             if ((uint)thread > MaxThreadIndex)
             {
-                _log.Warn("config", $"rule '{exeName}': thread index {thread} out of range, dropped"); // config.thread-index-dropped
+                _log.Warn("config", $"rule '{exeName}': thread index {thread} out of range, dropped");
                 continue;
             }
             kept.Add(thread);
@@ -427,8 +411,7 @@ public sealed class ConfigStore
         return true;
     }
 
-    /// The only place where ConfigStore deletes a file of its own accord, and it only ever
-    /// touches this one diagnostic file (§6.3). Guard-free like the rename (§6.6).
+    /// The only file ConfigStore deletes on its own, and guard-free like the rename.
     private string? UpdateSkippedFile(List<JsonElement> skippedRaw)
     {
         string path = Path.Combine(_directory, SkippedFileName);
@@ -440,12 +423,12 @@ public sealed class ConfigStore
                 if (File.Exists(path))
                 {
                     File.Delete(path);
-                    _log.Debug("config", "config.skipped.json removed, no rules skipped on this load");// config.skipped-file-removed
+                    _log.Debug("config", "config.skipped.json removed, no rules skipped on this load");
                 }
             }
             catch (Exception)
             {
-                // Best effort (AN-S05-4): a leftover diagnostic file is not worth a failure.
+                // Best effort: a leftover diagnostic file is not worth a failure.
             }
             return null;
         }
@@ -457,7 +440,7 @@ public sealed class ConfigStore
         }
         catch (Exception)
         {
-            // RulesSkipped and Outcome stay correct, only the diagnostic file is missing (§6.5).
+            // RulesSkipped and Outcome stay correct, only the diagnostic file is missing.
         }
         return SkippedFileName;
     }
@@ -473,10 +456,8 @@ public sealed class ConfigStore
         }
         catch (Exception ex)
         {
-            // A5: serialization sits INSIDE the try — Save() must never throw (§5.4/§10.1),
-            // not even on a failure that happens before any file access. Not retryable
-            // (no transient I/O state), so no retry attempt.
-            _log.Warn("config", $"write failed: {ex.GetType().Name} {ex.HResult}");                    // config.write-failed
+            // Serialization sits INSIDE the try: Save() must never throw. Not retryable.
+            _log.Warn("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
             return;
         }
 
@@ -491,31 +472,26 @@ public sealed class ConfigStore
             }
             catch (IOException ex) when (attempt < backoffMs.Length)
             {
-                _log.Warn("config",                                                                    // config.write-retry
+                _log.Warn("config",
                     $"write attempt {attempt + 1} failed: {ex.GetType().Name} {ex.HResult}, retrying");
                 Thread.Sleep(backoffMs[attempt]);
             }
             catch (Exception ex)
             {
-                // Every exception, like TryEnsureDirectory in Load(): Directory.CreateDirectory
-                // also throws ArgumentException/NotSupportedException on a degenerate path, and
-                // §5.4/§10.1 promise without qualification that Save never throws.
-                // No ex.Message: it usually carries the full path and with it the Windows
-                // user name (S02 §7.1, D15). UnauthorizedAccessException is never retried —
-                // a permission problem does not resolve within milliseconds.
-                _log.Warn("config", $"write failed: {ex.GetType().Name} {ex.HResult}");                // config.write-failed
+                // Catch-all so Save never throws; no ex.Message — it can carry the user name.
+                _log.Warn("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
                 return;
             }
         }
     }
 
-    /// 02 §12.2: temp file in the SAME directory, flush to disk, then replace.
+    /// The temp file must sit in the SAME directory as the target.
     private void WriteAtomically(string json)
     {
         string temp = Path.Combine(_directory, TempFileName);
         string target = Path.Combine(_directory, FileName);
 
-        // FileMode.Create silently overwrites an orphaned .tmp from an earlier run (§5.2).
+        // FileMode.Create silently overwrites an orphaned .tmp from an earlier run.
         using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
         {
             byte[] bytes = Utf8NoBom.GetBytes(json);
@@ -554,15 +530,13 @@ public sealed class ConfigStore
                 Enabled = r.Enabled,
             })],
         };
-        // Trailing "\n" like topology.json (S04 §3.4): a file without a final line ending is
-        // the exception in every editor and every diff, and §9 sells hand-correctability.
+        // Trailing "\n": a file without a final line ending is the exception everywhere.
         return JsonSerializer.Serialize(dto, WriteContext.ConfigFileWriteDto) + "\n";
     }
 
     private static WindowBoundsJson? ToJson(WindowBounds? bounds)
         => bounds is null ? null : new WindowBoundsJson { X = bounds.X, Y = bounds.Y, W = bounds.W, H = bounds.H };
 
-    /// A type error on a mandatory field. Caught inside Load() and turned into
-    /// ConfigLoadOutcome.Corrupt — it never leaves this class.
+    /// Caught inside Load() and turned into ConfigLoadOutcome.Corrupt; never leaves here.
     private sealed class ConfigFormatException(string field) : Exception(field);
 }

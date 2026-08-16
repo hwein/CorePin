@@ -1,7 +1,6 @@
 namespace CorePin.Core.Platform;
 
-/// S01 §3.3 / S04 §3.6. Belongs to the port, not to the format — the format error is
-/// TopologyFormatException in CorePin.Core.Topology.
+/// Belongs to the port, not to the format — the format error is TopologyFormatException.
 public sealed class TopologyReadException : Exception
 {
     public TopologyReadException(string message, int win32Error = 0)

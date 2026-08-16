@@ -8,12 +8,7 @@ using static CorePin.Interop.NativeMethods;
 
 namespace CorePin.Interop;
 
-/// Raw topology capture over GetLogicalProcessorInformationEx (S04 §2). Public and
-/// parameterless: the debug path in S01 §3.7 creates a second instance, and the class
-/// holds no state beyond a single Read() (S01 §3.8).
-///
-/// The source does not log — it runs in S01 §3.7 step 0, the logger only appears in
-/// step 3. Anomalies leave as DATA via Warnings (S04 §2.7, T23).
+/// Raw topology capture over GetLogicalProcessorInformationEx; anomalies leave via Warnings.
 public sealed class Win32TopologySource : ITopologySource
 {
     private readonly List<string> _warnings = [];
@@ -25,8 +20,7 @@ public sealed class Win32TopologySource : ITopologySource
         _warnings.Clear();
         var (buffer, length) = Query(_warnings);
 
-        // Read before the walk, reported after it — the warning order of §2.7 is the order
-        // of occurrence, and the buffer anomalies happen first.
+        // Read before the walk, reported after it: buffer anomalies happen first.
         var identity = CpuIdentity.Read();
 
         var snapshot = ParseBuffer(buffer.AsSpan(0, (int)length),
@@ -38,19 +32,17 @@ public sealed class Win32TopologySource : ITopologySource
         return snapshot;
     }
 
-    /// Only for --debug-dump-raw (S04 §8.4). This is a SECOND Win32 call, so the bytes are
-    /// not guaranteed to be identical to the ones the dump was built from.
+    /// A SECOND Win32 call — the bytes need not match the ones the dump was built from.
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Performance", "CA1822:Mark members as static",
-        Justification = "S04 §2.1 declares ReadRawBuffer as an instance member of the source; "
-                      + "DumpTopologyCommand calls it on the ITopologySource it already holds.")]
+        Justification = "Called on the ITopologySource instance the caller already holds.")]
     public byte[] ReadRawBuffer()
     {
         var (buffer, length) = Query([]);
         return buffer.AsSpan(0, (int)length).ToArray();
     }
 
-    // ── The two-step call (S04 §2.1) ────────────────────────────────────────────────
+    // ── The two-step call ───────────────────────────────────────────────────────────
 
     private static (byte[] Buffer, uint Length) Query(List<string> warnings)
     {
@@ -68,15 +60,13 @@ public sealed class Win32TopologySource : ITopologySource
         if (length == 0)
             throw new TopologyReadException("GetLogicalProcessorInformationEx reported a zero-length buffer");
 
-        // At most one retry: an unbounded loop here would be a hang during startup, and two
-        // attempts cover every real change (S04 §2.1 step 3).
+        // At most one retry: an unbounded loop here would be a hang during startup.
         for (int attempt = 0; ; attempt++)
         {
             byte[] buffer = new byte[length];
             uint written = length;
 
-            // A managed byte[] pinned for the duration of the call: no unsafe, no leak on
-            // an exception between allocation and release (S04 T24).
+            // A managed byte[] pinned for the duration of the call: no unsafe needed.
             var pin = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             bool ok;
             try
@@ -113,14 +103,13 @@ public sealed class Win32TopologySource : ITopologySource
         return "CorePin " + (plus < 0 ? informational : informational[..plus]);
     }
 
-    // ── The buffer walk over variable-length records (S04 §2.2/§2.3) ────────────────
+    // ── The buffer walk over variable-length records ────────────────────────────────
 
     private const int HeaderSize = 8;
     private const int GroupAffinitySize = 16;
     private const int ProcessorGroupInfoSize = 48;
 
-    /// Separated from the Win32 call so the recorded buffer of S01 §5.5 can be fed in
-    /// without a native call (S01 §2.1, the interop test boundary).
+    /// Separated from the Win32 call so a recorded buffer can be walked without a native call.
     internal static TopologySnapshot ParseBuffer(
         ReadOnlySpan<byte> span, string capturedBy, string vendor, string cpuName, List<string> warnings)
     {
@@ -141,8 +130,7 @@ public sealed class Win32TopologySource : ITopologySource
             uint relationship = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(offset, 4));
             uint size = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(offset + 4, 4));
 
-            // Never skip and continue: that is the off-by-one of 02 §12.1, and "repairing"
-            // it by searching on produces records made of random bytes.
+            // Never skip on: records are variably sized, a bad Size cannot be searched past.
             if (size < HeaderSize || size > (uint)(span.Length - offset))
                 throw new TopologyReadException(
                     Invariant($"record size {size} at offset {offset} (rel {relationship})"));
@@ -166,8 +154,7 @@ public sealed class Win32TopologySource : ITopologySource
             offset += (int)size;
         }
 
-        // Defaulting to 1 would let a multi-group system through silently and set masks
-        // that mean something else there (02 §4.5, prior-round finding 5).
+        // Defaulting to 1 would let a multi-group system through with meaningless masks.
         if (activeGroupCount is not { } groups)
             throw new TopologyReadException("no RelationGroup record in the topology buffer");
 
@@ -209,8 +196,7 @@ public sealed class Win32TopologySource : ITopologySource
             {
                 Mask = BinaryPrimitives.ReadUInt64LittleEndian(record.Slice(32 + GroupAffinitySize * i, 8)),
                 EfficiencyClass = efficiencyClass,
-                // A bit test, not an equality comparison: Flags == LTP_PC_SMT would turn
-                // Smt false as soon as Windows sets a second flag (S04 §2.5).
+                // A bit test, not equality: a second Windows flag would turn Smt false.
                 Smt = (flags & LTP_PC_SMT) != 0,
             });
         }
@@ -219,7 +205,7 @@ public sealed class Win32TopologySource : ITopologySource
     private static void ReadCache(
         ReadOnlySpan<byte> record, int offset, List<CacheRecord> caches, List<string> warnings)
     {
-        // 40, not 32: GroupCount sits at offset 38 and ends at byte 40 (S04 §2.2).
+        // 40, not 32: GroupCount sits at offset 38 and ends at byte 40.
         Guard(record.Length >= 40, offset, LogicalProcessorRelationship.RelationCache, record.Length);
 
         int level = record[8];
@@ -231,8 +217,7 @@ public sealed class Win32TopologySource : ITopologySource
 
         for (int i = 0; i < count; i++)
         {
-            // No filter on Type: the core filters on level == 3; a CacheUnified filter here
-            // would be an assumption about how an L3 is reported (S04 §2.5).
+            // No filter on Type — that would assume how an L3 is reported.
             caches.Add(new CacheRecord
             {
                 Level = level,
@@ -249,8 +234,7 @@ public sealed class Win32TopologySource : ITopologySource
 
         int active = BinaryPrimitives.ReadUInt16LittleEndian(record.Slice(10, 2));
 
-        // The second guard is larger than ActiveGroupCount alone would need, because
-        // GroupInfo[0].ActiveProcessorMask is read too (S04 §2.2/§2.4).
+        // Larger than ActiveGroupCount needs: GroupInfo[0].ActiveProcessorMask is read too.
         Guard(record.Length >= 32 + ProcessorGroupInfoSize * active,
               offset, LogicalProcessorRelationship.RelationGroup, record.Length);
 
@@ -260,9 +244,7 @@ public sealed class Win32TopologySource : ITopologySource
             : 0;
     }
 
-    /// GroupCount == 0 can only come from a Windows version that still carried the field as
-    /// reserved; both header generations put the first GROUP_AFFINITY at the same offset,
-    /// and there is exactly one entry there (S04 §2.3, T-A2).
+    /// GroupCount == 0: older header; the first GROUP_AFFINITY offset is unchanged, so assume one.
     private static int GroupCount(ushort raw, int offset, List<string> warnings)
     {
         if (raw != 0) return raw;

@@ -3,9 +3,7 @@ using CorePin.Core.Diagnostics;
 
 namespace CorePin.App;
 
-/// S01 §3.9/§6.3. Parse never logs — it runs before the logger exists.
-/// Comparison is OrdinalIgnoreCase, the leading "--" is mandatory, a value is the
-/// following argument. Unknown arguments are collected, never fatal.
+/// Parse never logs — it runs before the logger exists.
 public sealed record StartupOptions
 {
     public bool Tray { get; init; }
@@ -14,9 +12,8 @@ public sealed record StartupOptions
 
     public required IReadOnlyList<string> Unknown { get; init; }
 
-    /// --log-level. Deliberately without #if DEBUG: a diagnostic aid for the user, not a
-    /// developer tool — it must exist in the release build (S01 §6.3, C-3).
-    public LogLevel? LogLevelOverride { get; init; }        // null = argument not given
+    /// Deliberately without #if DEBUG: a user-facing diagnostic aid, not a developer tool.
+    public LogLevel? LogLevelOverride { get; init; }
 
     public string? InvalidLogLevelValue { get; init; }      // given, but with an unreadable value
 

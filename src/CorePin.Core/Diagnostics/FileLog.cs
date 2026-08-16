@@ -14,8 +14,7 @@ internal enum QueueItemKind { Line, SyncMarker }
 internal readonly record struct QueueItem(
     QueueItemKind Kind, LogEntry? Line = null, ManualResetEventSlim? Signal = null);
 
-/// The three size limits of S02 §3.3 plus the queue capacity of §5.3. Only the test seam
-/// (CreateForTests) ever passes anything but Default — production always runs on Default.
+/// Only the test seam (CreateForTests) ever passes anything but Default.
 internal readonly record struct FileLogLimits(
     long FileSizeBytes, int SessionFiles, long DirectoryBudgetBytes, int QueueCapacity)
 {
@@ -23,7 +22,7 @@ internal readonly record struct FileLogLimits(
         new(10L * 1024 * 1024, 5, 50L * 1024 * 1024, 2000);
 }
 
-/// One background writer, one queue (S02 §5). Write never blocks and never throws.
+/// One background writer, one queue. Write never blocks and never throws.
 public sealed class FileLog : ILog, IDisposable
 {
     private const int ColdStartCapacity = 200;
@@ -41,8 +40,7 @@ public sealed class FileLog : ILog, IDisposable
     private readonly Thread _writer;
     private readonly string _sessionStamp;
 
-    // Cold start (S02 §9.3): everything written before Minimum is assigned is buffered
-    // unfiltered and replayed through the then-known level.
+    // Cold start: lines written before Minimum is assigned are buffered and replayed later.
     private readonly object _coldStartGate = new();
     private List<LogEntry>? _coldStart = new(ColdStartCapacity);
 
@@ -77,9 +75,7 @@ public sealed class FileLog : ILog, IDisposable
     public static FileLog Create(string logDirectory, LogLevel minimum, IClock clock)
         => Create(logDirectory, minimum, clock, FileLogLimits.Default, writerGate: null);
 
-    /// Test seam (S02 §11): the size limits are far too large to be reached by a test, and
-    /// a running writer empties the queue faster than a test can fill it. writerGate, when
-    /// set, holds the writer back until the test opens it. No public surface.
+    /// Test seam: production limits are unreachable in a test; writerGate holds the writer.
     internal static FileLog CreateForTests(string logDirectory, LogLevel minimum, IClock clock,
                                            FileLogLimits limits, ManualResetEventSlim? writerGate = null)
         => Create(logDirectory, minimum, clock, limits, writerGate);
@@ -90,12 +86,11 @@ public sealed class FileLog : ILog, IDisposable
         string resolved = ResolveDirectory(logDirectory, out bool usedFallback);
         var log = new FileLog(resolved, minimum, clock, limits, writerGate);
         if (usedFallback)
-            log.Warn("app", "primary log location unavailable, using fallback location");   // app.log-dir-fallback
+            log.Warn("app", "primary log location unavailable, using fallback location");
         return log;
     }
 
-    /// The log directory ACTUALLY in use. Differs from the requested path when the
-    /// fallback applied; EMPTY when nothing could be created (S01 §3.1, C-1).
+    /// The directory ACTUALLY in use — the fallback path, or EMPTY if nothing could be made.
     public string Directory { get; }
 
     public LogLevel Minimum
@@ -103,8 +98,7 @@ public sealed class FileLog : ILog, IDisposable
         get => _minimum;
         set
         {
-            // Replay runs inside the lock so a concurrent Write cannot slip past the
-            // buffered lines and reach the queue first (S02 §9.3, replay race).
+            // Inside the lock so a concurrent Write cannot reach the queue before the replay.
             lock (_coldStartGate)
             {
                 _minimum = value;
@@ -116,15 +110,13 @@ public sealed class FileLog : ILog, IDisposable
         }
     }
 
-    /// Open until Minimum has been assigned, so a caller that guards Write with
-    /// IsEnabled still reaches the cold start buffer (S02 §5.4).
+    /// Open until Minimum is assigned, so an IsEnabled-guarded Write still reaches the buffer.
     public bool IsEnabled(LogLevel level) => Volatile.Read(ref _coldStart) is not null || level >= _minimum;
 
     public void Write(LogLevel level, string category, string message)
         => Submit(level, category, message, forced: false);
 
-    /// Bypasses Minimum. Admitted for exactly four identifiers (S02 §6): app.start,
-    /// topology.summary, app.log-level-override, app.exit.
+    /// Bypasses Minimum; only app.start, topology.summary, app.log-level-override, app.exit.
     public void WriteAlways(LogLevel level, string category, string message)
         => Submit(level, category, message, forced: true);
 
@@ -138,20 +130,17 @@ public sealed class FileLog : ILog, IDisposable
 
     public void Dispose()
     {
-        // 1. A never-assigned Minimum would swallow the whole session (S02 §5.6).
+        // A never-assigned Minimum would swallow the whole session.
         if (Volatile.Read(ref _coldStart) is not null) Minimum = _minimum;
 
         _closed = true;
-        // A second Dispose finds the queue already disposed. Nothing is left to complete
-        // in that case, so swallowing is the whole intended reaction (S02 §10).
+        // A second Dispose finds the queue disposed; there is nothing left to complete.
         try { _queue.CompleteAdding(); }
         catch (ObjectDisposedException) { }
 
         bool joined = _writer.Join(JoinTimeoutMs);
 
-        // 4. Handle AND queue are released only when the writer is provably done —
-        //    otherwise the still running writer would hit an ObjectDisposedException
-        //    on either of them (S02 §5.6).
+        // Released only when the writer is provably done, or it hits ObjectDisposedException.
         if (joined)
         {
             try { _stream?.Dispose(); }
@@ -167,16 +156,14 @@ public sealed class FileLog : ILog, IDisposable
     {
         var entry = new LogEntry(_clock.UtcNow, level, category, message, forced);
 
-        // Double-checked (S02 §9.3): the buffer is closed for the whole session after the
-        // first Minimum assignment — from then on no caller takes the lock.
+        // Double-checked: after the first Minimum assignment no caller takes the lock again.
         if (Volatile.Read(ref _coldStart) is null) { Emit(entry); return; }
 
         lock (_coldStartGate)
         {
             if (_coldStart is { } buffer)
             {
-                // Over the limit the YOUNGEST lines are dropped — the start of a session
-                // is what makes a log readable.
+                // Over the limit the YOUNGEST lines are dropped; a session start must survive.
                 if (buffer.Count < ColdStartCapacity) buffer.Add(entry);
                 return;
             }
@@ -194,8 +181,7 @@ public sealed class FileLog : ILog, IDisposable
     internal bool TryEnqueue(QueueItem item)
     {
         if (_closed) return false;
-        // ObjectDisposedException derives from InvalidOperationException — it has to be
-        // caught first, otherwise the compiler rejects the second clause (CS0160).
+        // ObjectDisposedException is an InvalidOperationException; order forced (CS0160).
         try { return _queue.TryAdd(item); }
         catch (ObjectDisposedException) { return false; }
         catch (InvalidOperationException) { return false; }
@@ -205,8 +191,7 @@ public sealed class FileLog : ILog, IDisposable
 
     private void Run()
     {
-        // Two nets: a failure in Handle costs one line, a failure in the enumeration
-        // itself must still not take the process down (S01 §4.2).
+        // Two nets: a Handle failure costs one line, a loop failure would kill the process.
         try
         {
             _writerGate?.Wait();
@@ -244,7 +229,7 @@ public sealed class FileLog : ILog, IDisposable
         if (dropped > 0)
         {
             WriteToFile(FormatLine(new LogEntry(_clock.UtcNow, LogLevel.Warn, "app",
-                $"log queue overflow, {dropped} lines dropped since last report")));   // app.queue-overflow
+                $"log queue overflow, {dropped} lines dropped since last report")));
         }
         FlushStream();
     }
@@ -273,7 +258,7 @@ public sealed class FileLog : ILog, IDisposable
         }
         catch (Exception ex)
         {
-            // Disk full or handle lost: stop writing for the rest of the session (S02 §10).
+            // Disk full or handle lost: stop writing for the rest of the session.
             TraceOnly(ex);
             _writeDisabled = true;
         }
@@ -292,14 +277,14 @@ public sealed class FileLog : ILog, IDisposable
         if (_stream is null) return;
 
         long megabytes = _limits.FileSizeBytes / (1024 * 1024);
-        // File name only, never the path (S02 §7.1).
+        // File name only, never the path.
         WriteHeader($"log file size limit reached ({megabytes.ToString(CultureInfo.InvariantCulture)} MB), "
-                    + $"continued from {previous}");                                  // app.file-limit-reached
+                    + $"continued from {previous}");
     }
 
     private void DropOldestContinuation()
     {
-        // Never the origin file — it carries the session header (S02 §3.3).
+        // Never the origin file — it carries the session header.
         string? oldest = _sessionFiles.Skip(1).FirstOrDefault();
         if (oldest is null) return;
 
@@ -318,11 +303,10 @@ public sealed class FileLog : ILog, IDisposable
         if (_pendingSessionLimitNote)
         {
             _pendingSessionLimitNote = false;
-            // The count comes from the limit in force so the line cannot claim a number
-            // that is not the one enforced; the default is the 5 files of S02 §6.
+            // From the limit in force, so the line cannot claim a number that is not enforced.
             WriteToFile(FormatLine(new LogEntry(_clock.UtcNow, LogLevel.Warn, "app",
                 $"session log size limit reached ({_limits.SessionFiles.ToString(CultureInfo.InvariantCulture)} files), "
-                + "oldest continuation file removed")));                              // app.session-limit-reached
+                + "oldest continuation file removed")));
         }
     }
 
@@ -330,8 +314,7 @@ public sealed class FileLog : ILog, IDisposable
     {
         if (Directory.Length == 0) { _writeDisabled = true; return; }
 
-        // Enforced at session start AND at every new file of the running session, on the
-        // writer thread (S02 §3.3).
+        // At session start and at every new file, on the writer thread.
         EnforceDirectoryBudget();
 
         _filePart++;
@@ -358,8 +341,7 @@ public sealed class FileLog : ILog, IDisposable
         _writeDisabled = true;
     }
 
-    /// Only FOREIGN, older session prefixes count against the directory budget —
-    /// the running session can never lose its own head file (S02 §3.3).
+    /// Only FOREIGN, older session prefixes count — a session never loses its own head file.
     private void EnforceDirectoryBudget()
     {
         if (Directory.Length == 0) return;

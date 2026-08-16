@@ -1,13 +1,12 @@
 using System.Globalization;
 using System.Numerics;
 
-namespace CorePin.Core.Primitives;      // NOT Rules — S01 §2.5 and §3.3
+namespace CorePin.Core.Primitives;      // NOT Rules — masks are a primitive, not a rule concept
 
-/// A 64-bit processor affinity mask. Bit i is logical processor i in group 0 (02 §5.1).
+/// A 64-bit processor affinity mask. Bit i is logical processor i in group 0.
 public readonly struct AffinityMask : IEquatable<AffinityMask>
 {
-    /// Highest usable thread index: the target platform is capped at 64 logical
-    /// processors in one processor group (02 §3).
+    /// The target platform is capped at 64 logical processors in one processor group.
     private const int MaxThread = 63;
 
     public AffinityMask(ulong value) => Value = value;
@@ -63,7 +62,7 @@ public readonly struct AffinityMask : IEquatable<AffinityMask>
         return result;
     }
 
-    /// "0x" plus exactly 16 uppercase hex digits — the canonical form of S04 §3.4.
+    /// "0x" plus exactly 16 uppercase hex digits — the canonical form of the dump.
     public string ToHex() => "0x" + Value.ToString("X16", CultureInfo.InvariantCulture);
 
     public bool Equals(AffinityMask other) => Value == other.Value;

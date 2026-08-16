@@ -1,7 +1,6 @@
 namespace CorePin.Core.Diagnostics;
 
-/// Implementations must be thread-safe (S01 §3.1): the UI thread, the engine worker
-/// thread and the startup path call this without knowing about each other.
+/// Implementations must be thread-safe: UI thread, worker thread and startup all call it.
 public interface ILog
 {
     bool IsEnabled(LogLevel level);

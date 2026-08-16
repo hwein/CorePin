@@ -6,14 +6,7 @@ public enum RuleCheck { Apply, NoRestriction, Invalid, Disabled }
 
 public static class RuleEvaluation
 {
-    /// Binding order (S01 §3.4):
-    ///   1. !Enabled                       -> Disabled
-    ///   2. NeedsReview                    -> Invalid        (02 §6, the CPU changed)
-    ///   3. Threads == machineMask         -> NoRestriction  (02 §5.1/§5.3)
-    ///   4. !Threads.FitsInto(machineMask) -> Invalid        (02 §5.4)
-    ///   5. otherwise                      -> Apply
-    /// NeedsReview stands BEFORE the mask checks: after a CPU change every rule has to be
-    /// Invalid, including one whose mask happens to still fit.
+    /// NeedsReview comes FIRST: after a CPU change even a still-fitting mask must be Invalid.
     public static RuleCheck Check(Rule rule, AffinityMask machineMask)
     {
         ArgumentNullException.ThrowIfNull(rule);

@@ -11,7 +11,7 @@ public sealed record Settings
 {
     public int PollIntervalMs { get; init; } = 1000;
 
-    /// E7: read and written, NOT evaluated in v0.1.
+    /// Read and written, but NOT evaluated in v0.1.
     public string StartWithWindows { get; init; } = "normal";
 
     public LogLevel LogLevel { get; init; } = LogLevel.Info;
@@ -37,9 +37,7 @@ public sealed record AppConfig
 
 public enum ConfigLoadOutcome { Loaded, Missing, Unreadable, Corrupt, TooNew }
 
-/// Config.Rules is ALWAYS RuleSet.Empty (S05 §8.3) — the rules actually read from the file
-/// live in RawRules, unmarked. The composition root derives the authoritative set from them
-/// in step 4b (S01 §3.7).
+/// Config.Rules is ALWAYS RuleSet.Empty — the rules read from the file live in RawRules.
 public sealed record ConfigLoadResult(
     AppConfig Config,
     RuleSet RawRules,

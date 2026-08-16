@@ -2,8 +2,7 @@ using Microsoft.Win32;
 
 namespace CorePin.Interop;
 
-/// Two separate flags with two separate consumers (S03 §6.1): AppsUseLightTheme drives
-/// the window, SystemUsesLightTheme drives the tray icon variant.
+/// AppsUseLightTheme drives the window, SystemUsesLightTheme the tray icon variant.
 public static class ThemeSettings
 {
     private const string PersonalizeKey =

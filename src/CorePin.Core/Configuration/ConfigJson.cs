@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace CorePin.Core.Configuration;
 
-// ── Stage 1: the outer shell. NO required member. `rules` stays raw (S05 §4.2).
+// ── Stage 1: the outer shell. NO required member. `rules` stays raw.
 internal sealed class ConfigFileDto
 {
     public JsonElement SchemaVersion { get; set; }
@@ -34,7 +34,7 @@ internal sealed class WindowBoundsJson
     public int H { get; set; }
 }
 
-// ── Stage 2: one rule at a time, likewise without required members (S05 §3.5).
+// ── Stage 2: one rule at a time, likewise without required members.
 internal sealed class RuleJson
 {
     public string? Id { get; set; }
@@ -42,13 +42,11 @@ internal sealed class RuleJson
     public string? LastKnownPath { get; set; }
     public int[]? Threads { get; set; }
 
-    /// Raw, not bool?: a present-but-non-boolean value has to be reportable as
-    /// `invalid enabled`, and a bool? member would throw inside Deserialize instead,
-    /// which is indistinguishable from `malformed entry` (S02 §6, config.rule-skipped).
+    /// Raw, not bool?: a bool? would throw in Deserialize and read as `malformed entry`.
     public JsonElement Enabled { get; set; }
 }
 
-// ── Writing: own, strict DTOs, separate from the tolerant reading ones (S05 §4.4).
+// ── Writing: own, strict DTOs, separate from the tolerant reading ones.
 internal sealed class ConfigFileWriteDto
 {
     public required int SchemaVersion { get; init; }
@@ -71,7 +69,7 @@ internal sealed class SettingsWriteDto
     public required string LogLevel { get; init; }
 }
 
-/// Deliberately carries NO NeedsReview field (S05 §3.1/§4.4).
+/// Deliberately carries NO NeedsReview field — it is never persisted.
 internal sealed class RuleWriteDto
 {
     public required string Id { get; init; }

@@ -3,20 +3,17 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
-    <AssemblyName>CorePin</AssemblyName>          <!-- E2: the EXE is named CorePin.exe -->
+    <AssemblyName>CorePin</AssemblyName>
     <RootNamespace>CorePin.App</RootNamespace>
     <StartupObject>CorePin.App.Program</StartupObject>
     <ApplicationIcon>..\..\assets\CorePin.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- SelfContained / RuntimeIdentifier / PublishSingleFile live in build/publish.cmd: in the
-         project file they make even a plain restore pull runtime packs from the network (E1). -->
+    <!-- SelfContained etc. belong in build/publish.cmd; here they make restore go online -->
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <PublishTrimmed>false</PublishTrimmed>
     <PublishReadyToRun>false</PublishReadyToRun>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <!-- DELIBERATELY NOT SET in v0.1:
-         IncludeNativeLibrariesForSelfExtract (S01 §6.2, A16) and
-         InvariantGlobalization (S01 §6.2, A16) -->
+    <!-- DELIBERATELY NOT SET: IncludeNativeLibrariesForSelfExtract, InvariantGlobalization -->
   </PropertyGroup>
   <ItemGroup>
     <ApplicationDefinition Remove="App.xaml" />
@@ -31,16 +28,14 @@
     <EmbeddedResource Include="..\..\assets\tray-dark.ico"  Link="Assets\tray-dark.ico" />
   </ItemGroup>
 
-  <!-- Gate G0 picked path A; 01 §5 rules out Mica, and without this switch Fluent puts a Mica
-       backdrop on every window by itself (S03 §3.2/D15). -->
+  <!-- Without this switch Fluent puts a Mica backdrop on every window by itself. -->
   <ItemGroup>
     <RuntimeHostConfigurationOption
         Include="Switch.System.Windows.Appearance.DisableFluentThemeWindowBackdrop"
         Value="true" />
   </ItemGroup>
 
-  <!-- Icon freshness check (S12 §6.3): fails when icon.svg is newer than one of the three
-       .ico derivations. Plain MSBuild, no NuGet dependency. -->
+  <!-- Fails when icon.svg is newer than one of the three .ico derivations. -->
   <Target Name="CorePinIconFreshnessCheck" BeforeTargets="Build"
           Condition="Exists('$(MSBuildProjectDirectory)\..\..\assets\icon.svg')">
     <PropertyGroup>
@@ -50,10 +45,10 @@
       <_TrayDarkIcoTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\..\..\assets\tray-dark.ico').Ticks)</_TrayDarkIcoTime>
     </PropertyGroup>
     <Error Condition="$(_CorePinSvgTime) &gt; $(_CorePinIcoTime)"
-           Text="assets/icon.svg is newer than assets/CorePin.ico — re-export the icons (S12 §6.2)." />
+           Text="assets/icon.svg is newer than assets/CorePin.ico — re-export the icons." />
     <Error Condition="$(_CorePinSvgTime) &gt; $(_TrayLightIcoTime)"
-           Text="assets/icon.svg is newer than assets/tray-light.ico — re-export the icons (S12 §6.2)." />
+           Text="assets/icon.svg is newer than assets/tray-light.ico — re-export the icons." />
     <Error Condition="$(_CorePinSvgTime) &gt; $(_TrayDarkIcoTime)"
-           Text="assets/icon.svg is newer than assets/tray-dark.ico — re-export the icons (S12 §6.2)." />
+           Text="assets/icon.svg is newer than assets/tray-dark.ico — re-export the icons." />
   </Target>
 </Project>

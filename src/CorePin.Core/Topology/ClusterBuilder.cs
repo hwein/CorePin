@@ -6,10 +6,7 @@ namespace CorePin.Core.Topology;
 
 public static class ClusterBuilder
 {
-    /// PURE FUNCTION (02 §4.6, S01 §3.2). No Win32, no registry, no logger, no time, no
-    /// randomness, no file system, no culture-dependent formatting. The same snapshot
-    /// twice gives the same result twice, byte for byte.
-    /// Throws TopologyFormatException for structurally impossible input (S04 §4.2).
+    /// PURE FUNCTION: no Win32, registry, logger, time, randomness, file system or culture.
     public static CpuTopology Build(TopologySnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -25,7 +22,7 @@ public static class ClusterBuilder
         groups = DropEmptyGroups(cores, groups, notes);        // 1d + 1e + remap
 
         var clusters = BuildClusters(cores, groups);           // step 2 + 3 + 4
-        bool hasSmt = DetectSmt(snapshot, cores, notes);       // §4.4
+        bool hasSmt = DetectSmt(snapshot, cores, notes);
 
         var labels = ClusterLabeling.Assign(
             snapshot.Vendor, clusters, notes.HasStructureNote, cores);
@@ -44,7 +41,7 @@ public static class ClusterBuilder
         };
     }
 
-    // ── Step 0 — entry checks (S04 §4.2) ────────────────────────────────────────────
+    // ── Step 0 — entry checks ───────────────────────────────────────────────────────
 
     private static void Validate(TopologySnapshot snapshot)
     {
@@ -81,7 +78,7 @@ public static class ClusterBuilder
         }
     }
 
-    // ── Step 1a — physical cores in input order (S04 §4.3) ──────────────────────────
+    // ── Step 1a — physical cores in input order ─────────────────────────────────────
 
     private static List<CoreInfo> BuildCores(TopologySnapshot snapshot)
     {
@@ -104,7 +101,7 @@ public static class ClusterBuilder
         return threads;
     }
 
-    // ── Step 1b — L3 groups, preliminary order (S04 §4.3) ───────────────────────────
+    // ── Step 1b — L3 groups, preliminary order ──────────────────────────────────────
 
     private static List<L3Group> BuildL3Groups(TopologySnapshot snapshot, NoteCollector notes)
     {
@@ -116,9 +113,7 @@ public static class ClusterBuilder
             var existing = groups.Find(g => g.Mask == cache.Mask);
             if (existing is not null)
             {
-                // Two identically masked L3 records describe the same cache; keeping both
-                // would split a cluster that does not physically exist. The maximum is the
-                // only size that invents nothing.
+                // Same mask means the same cache; the maximum invents nothing.
                 existing.SizeBytes = Math.Max(existing.SizeBytes, cache.SizeBytes);
                 notes.Add(NoteStep.L3Groups, cache.Mask, $"l3: duplicate mask {Hex(cache.Mask)}");
             }
@@ -128,8 +123,7 @@ public static class ClusterBuilder
             }
         }
 
-        // Preliminary order: ascending by lowest set bit. It only makes step 1c
-        // deterministic; the final order comes from 1e.
+        // Only to make step 1c deterministic; the final order comes from 1e.
         groups = [.. groups.OrderBy(g => BitOperations.TrailingZeroCount(g.Mask))];
 
         for (int i = 0; i < groups.Count; i++)
@@ -146,7 +140,7 @@ public static class ClusterBuilder
         return groups;
     }
 
-    // ── Step 1c — core → L3 group (S04 §4.3) ────────────────────────────────────────
+    // ── Step 1c — core → L3 group ───────────────────────────────────────────────────
 
     private static void AssignCores(
         List<CoreInfo> cores, List<L3Group> groups, ulong machineMask, NoteCollector notes)
@@ -161,8 +155,7 @@ public static class ClusterBuilder
                 groups[i].Cores.Add(core);
                 if ((core.Mask & groups[i].Mask) != core.Mask)
                 {
-                    // Half-attached core: no pattern we could put a name to — but the
-                    // assignment itself stays the only sensible one.
+                    // Half-attached core: no pattern we can name, but the only sensible fit.
                     notes.Add(NoteStep.CoreAssignment, core.Mask,
                         $"l3: partial core coverage {Hex(core.Mask)}", structural: true);
                 }
@@ -178,7 +171,7 @@ public static class ClusterBuilder
         }
     }
 
-    // ── Step 1d/1e — drop core-less groups, final order (S04 §4.3) ──────────────────
+    // ── Step 1d/1e — drop core-less groups, final order ─────────────────────────────
 
     private static List<L3Group> DropEmptyGroups(
         List<CoreInfo> cores, List<L3Group> groups, NoteCollector notes)
@@ -195,9 +188,7 @@ public static class ClusterBuilder
             kept.Add(group);
         }
 
-        // One key, not two: the same key that orders the clusters in §4.6, so the CCD
-        // numbering and the card cannot contradict each other. The secondary key is
-        // unreachable because every core belongs to exactly one group.
+        // Same key as the cluster order; the ThenBy is unreachable, groups being disjoint.
         var ordered = kept
             .OrderBy(g => g.Cores.Min(c => c.Threads[0]))
             .ThenBy(g => BitOperations.TrailingZeroCount(g.Mask))
@@ -209,7 +200,7 @@ public static class ClusterBuilder
         return ordered;
     }
 
-    // ── Steps 2–4 — clusters and their order (S04 §4.4–§4.6) ────────────────────────
+    // ── Steps 2–4 — clusters and their order ────────────────────────────────────────
 
     private static List<ClusterDraft> BuildClusters(List<CoreInfo> cores, List<L3Group> groups)
     {
@@ -236,8 +227,7 @@ public static class ClusterBuilder
         foreach (var draft in drafts)
             draft.Cores.Sort((a, b) => a.Threads[0].CompareTo(b.Threads[0]));
 
-        // Explicit sort key — no reliance on grouping or dictionary order (S04 §4.6).
-        // Ties are impossible because the core masks are pairwise disjoint (§4.2).
+        // Explicit sort key, no reliance on grouping order; ties are impossible here.
         return [.. drafts.OrderBy(d => d.Cores.Min(c => c.Threads[0]))];
     }
 
@@ -249,7 +239,7 @@ public static class ClusterBuilder
             bool maskSaysSmt = cores[i].Threads.Length > 1;
             hasSmt |= maskSaysSmt;
 
-            // The mask is what gets pinned and drawn; the flag is trimming (S04 §4.4).
+            // The mask is what gets pinned and drawn; the flag is trimming.
             if (maskSaysSmt != snapshot.Cores[i].Smt)
                 notes.Add(NoteStep.Smt, cores[i].Mask,
                     $"core: smt flag contradicts mask {Hex(cores[i].Mask)}");
@@ -266,8 +256,7 @@ public static class ClusterBuilder
         for (int i = 0; i < drafts.Count; i++)
         {
             var draft = drafts[i];
-            // The badge is measured arithmetic, not a labelling level (S04 T11): it is set
-            // on AuthenticAMD regardless of the profiling level, and never on Intel.
+            // Measured arithmetic, not a labelling level: set on AMD regardless, never Intel.
             bool badge = amd && VCacheRule.HasVCache(draft.L3Bytes, draft.L3GroupPhysicalCores);
 
             result.Add(new CpuCluster
@@ -286,7 +275,7 @@ public static class ClusterBuilder
         => "0x" + value.ToString("X16", CultureInfo.InvariantCulture);
 }
 
-// ── Internal working types (S04 §14.3 leaves their names open) ──────────────────────
+// ── Internal working types ──────────────────────────────────────────────────────────
 
 internal sealed class CoreInfo(ulong mask, int efficiencyClass, int[] threads)
 {
@@ -314,8 +303,7 @@ internal sealed class ClusterDraft(int l3GroupIndex, int efficiencyClass, long l
 
 internal enum NoteStep { L3Groups, CoreAssignment, EmptyGroups, Smt }
 
-/// Notes are ordered by creation step first and, within a step, ascending by the mask
-/// they name (S04 §4.7) — so two runs produce the same list.
+/// Ordered so that two runs produce the same list.
 internal sealed class NoteCollector
 {
     private readonly List<(NoteStep Step, ulong Mask, string Text)> _notes = [];

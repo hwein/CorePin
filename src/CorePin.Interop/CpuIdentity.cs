@@ -3,13 +3,10 @@ using Microsoft.Win32;
 
 namespace CorePin.Interop;
 
-/// CPU identity from the registry (02 §4.2, S07 §7.2). Called by Win32TopologySource,
-/// never from CorePin.Core.Topology (S01 §3.8).
+/// CPU identity from the registry — never called from CorePin.Core.Topology.
 internal static class CpuIdentity
 {
-    /// Never null and never untrimmed; ("", "") when the key cannot be read. The empty
-    /// string is the only value that claims nothing — it hits no vendor branch and leads
-    /// cleanly to "Group n" via G1 (S04 §2.6).
+    /// ("", "") when unreadable — the empty string claims nothing and hits no vendor branch.
     public static (string Vendor, string CpuName) Read()
     {
         try

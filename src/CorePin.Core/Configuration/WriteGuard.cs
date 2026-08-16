@@ -2,7 +2,7 @@ namespace CorePin.Core.Configuration;
 
 public enum GuardReason { None, ConfigTooNew, ConfigUnreadable, DebugTopology }
 
-/// Write and edit lock (S01 §3.6, S05 §7). Three lock states, not one.
+/// Write and edit lock. Three lock states, not one.
 public sealed record WriteGuard(bool CanEditRules, bool CanPersist, GuardReason Reason)
 {
     public static readonly WriteGuard Open = new(true, true, GuardReason.None);
@@ -10,10 +10,7 @@ public sealed record WriteGuard(bool CanEditRules, bool CanPersist, GuardReason 
     public static readonly WriteGuard Unreadable = new(false, false, GuardReason.ConfigUnreadable);
     public static readonly WriteGuard NoPersist = new(true, false, GuardReason.DebugTopology);
 
-    /// The stricter one wins, field-wise AND: the cases can occur together
-    /// (--debug-topology on a too new or unreadable config.json). Reason follows the first
-    /// non-None cause in the order ConfigTooNew, ConfigUnreadable, DebugTopology, None
-    /// (S05 §7.0).
+    /// Field-wise AND — the cases can occur together; Reason follows the first cause by Rank.
     public static WriteGuard Strictest(WriteGuard a, WriteGuard b)
     {
         ArgumentNullException.ThrowIfNull(a);

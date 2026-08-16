@@ -1,11 +1,9 @@
 namespace CorePin.Interop;
 
-/// Public shell around the internal NativeMethods declaration — ThemeController lives in
-/// CorePin.App and cannot reach NativeMethods directly (S03 §6.3).
+/// Public shell around the internal NativeMethods declaration, which CorePin.App cannot reach.
 public static class TitleBarTheme
 {
-    /// Paints the native title bar of hwnd dark or light
-    /// (DWMWA_USE_IMMERSIVE_DARK_MODE). Callable only once the HWND exists.
+    /// Callable only once the HWND exists.
     public static void SetDark(IntPtr hwnd, bool dark)
     {
         if (hwnd == IntPtr.Zero) return;

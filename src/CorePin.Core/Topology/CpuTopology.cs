@@ -4,7 +4,6 @@ namespace CorePin.Core.Topology;
 
 public enum ProfilingLevel { Profiled, NotProfiled }
 
-/// Result of the cluster building: what UI and engine see (S01 §3.2).
 public sealed record CpuTopology
 {
     public required string Vendor { get; init; }
@@ -15,12 +14,10 @@ public sealed record CpuTopology
     public required ProfilingLevel Profiling { get; init; }
     public required IReadOnlyList<CpuCluster> Clusters { get; init; }
 
-    /// The dump this was built from — the data source of "Copy topology" and
-    /// "Help us name them" (S01 §3.2, S04 §8.5).
+    /// The dump this was built from — the data source of "Copy topology".
     public required TopologySnapshot Source { get; init; }
 
-    /// Diagnostics of the cluster building as DATA (T-O2). Topology must not log by
-    /// S01 §2.5; wording and order are fixed by S04 §4.7.
+    /// Diagnostics of the cluster building as DATA — CorePin.Core.Topology must not log.
     public required IReadOnlyList<string> Notes { get; init; }
 }
 
@@ -37,6 +34,6 @@ public sealed record CpuCluster
 
 public sealed record PhysicalCore
 {
-    // at least 1, with SMT 2 — more is allowed and is not rejected (S01 §3.2, T-O17)
+    // at least 1, with SMT 2 — more is allowed and is not rejected
     public required IReadOnlyList<int> Threads { get; init; }
 }

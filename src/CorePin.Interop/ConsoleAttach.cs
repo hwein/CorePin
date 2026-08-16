@@ -3,16 +3,12 @@ using static CorePin.Interop.NativeMethods;
 
 namespace CorePin.Interop;
 
-/// A WinExe gets no console from the loader, and 02 §4.6 documents
-/// `CorePin.exe --dump-topology > topology.json` as the call form (S01 §6.4).
+/// A WinExe gets no console from the loader, but --dump-topology has to write to stdout.
 public static class ConsoleAttach
 {
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
-    /// Writes the text as UTF-8 without BOM, in this order: redirected stdout, else a
-    /// console attached to the parent process, else topology.json in the working
-    /// directory. No AllocConsole (a popping console window is what step 2 avoids) and
-    /// no message box (02 §4.6: "no UI").
+    /// UTF-8 without BOM. No AllocConsole (it would pop a window) and no message box.
     public static bool TryWrite(string text, out string destination)
     {
         byte[] bytes = Utf8NoBom.GetBytes(text);
