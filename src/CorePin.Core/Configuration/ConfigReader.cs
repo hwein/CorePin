@@ -5,7 +5,7 @@ using CorePin.Core.Diagnostics;
 
 namespace CorePin.Core.Configuration;
 
-/// Caught inside ConfigStore.Load and turned into ConfigLoadOutcome.Corrupt; never leaves it.
+/// Caught by TryRead below; it never leaves this assembly.
 internal sealed class ConfigFormatException(string field) : Exception(field);
 
 internal sealed record ConfigHeader(
