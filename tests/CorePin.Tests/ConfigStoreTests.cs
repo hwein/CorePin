@@ -8,16 +8,13 @@ using CorePin.Tests.Fakes;
 
 namespace CorePin.Tests;
 
-/// The test cases of S05 §11. They run against a real temporary directory (TempDir) —
-/// there is no IFileSystem abstraction (S01 §2.3).
+/// Runs against a real temporary directory (TempDir) — there is no IFileSystem abstraction.
 public static class ConfigStoreTests
 {
-    private const string ConfigFile = "config.json";
-    private const string SkippedFile = "config.skipped.json";
+    private const string ConfigFile = ConfigFileNames.Config;
+    private const string SkippedFile = ConfigFileNames.Skipped;
     private const string IdA = "8f3c1a2e-4b5d-4e6f-9a1b-2c3d4e5f6789";
     private const string IdB = "11111111-2222-3333-4444-555555555555";
-
-    // ── round trip and defaults ──────────────────────────────────────────────────────
 
     public static void Test_RoundTrip_AllFieldsSet()
     {
@@ -96,13 +93,13 @@ public static class ConfigStoreTests
         Assert.Equal(new MachineInfo("", 0), loaded.Config.Machine, "cpuName defaults to empty, logicalProcessors to 0");
     }
 
-    /// Literally the hand-correction example of S02 §8.1 — no schemaVersion, no machine.
+    /// A typical hand-corrected file — no schemaVersion, no machine, just settings.
     public static void Test_Defaults_PartialSettings()
     {
         var (loaded, log) = LoadJson("""{ "settings": { "logLevel": "debug" } }""");
 
-        Assert.Equal(ConfigLoadOutcome.Loaded, loaded.Outcome, "the S02 §8.1 hand-correction file must load");
-        Assert.Equal(1, loaded.Config.SchemaVersion, "a missing schemaVersion defaults to 1 (A1)");
+        Assert.Equal(ConfigLoadOutcome.Loaded, loaded.Outcome, "the hand-corrected minimal file must load");
+        Assert.Equal(1, loaded.Config.SchemaVersion, "a missing schemaVersion defaults to 1");
         Assert.Equal(LogLevel.Debug, loaded.Config.Settings.LogLevel, "logLevel is read");
         Assert.Equal(1000, loaded.Config.Settings.PollIntervalMs, "the remaining settings fields stay at their default");
         Assert.Equal("normal", loaded.Config.Settings.StartWithWindows, "startWithWindows stays at its default");
@@ -118,13 +115,11 @@ public static class ConfigStoreTests
         Assert.Equal(new MachineInfo("X", 0), loaded.Config.Machine, "a missing logicalProcessors defaults to 0");
     }
 
-    // ── schemaVersion ────────────────────────────────────────────────────────────────
-
     public static void Test_SchemaVersion_Missing_DefaultsToOne_NoRename()
     {
         var (loaded, log) = LoadJson("""{ "machine": { "logicalProcessors": 8 } }""");
 
-        Assert.Equal(ConfigLoadOutcome.Loaded, loaded.Outcome, "a missing schemaVersion key is not corruption (A1)");
+        Assert.Equal(ConfigLoadOutcome.Loaded, loaded.Outcome, "a missing schemaVersion key is not corruption");
         Assert.Equal(1, loaded.Config.SchemaVersion, "the default is 1");
         Assert.Equal(0, CorruptFiles(log), "no rename happened");
     }
@@ -147,8 +142,6 @@ public static class ConfigStoreTests
         Assert.Equal(ConfigLoadOutcome.Corrupt, loaded.Outcome, "a wrong JSON type on schemaVersion makes the file unreadable");
         Assert.True(log.Has("config.json unreadable, renamed to config.corrupt-"), "config.corrupt is logged");
     }
-
-    // ── settings ─────────────────────────────────────────────────────────────────────
 
     public static void Test_PollIntervalMs_OutOfRange_IsClamped()
     {
@@ -232,8 +225,6 @@ public static class ConfigStoreTests
             "config.window-bounds-discarded is logged");
     }
 
-    // ── rules ────────────────────────────────────────────────────────────────────────
-
     public static void Test_Rule_MissingId_SkipsRuleNotFile()
     {
         var (loaded, log) = LoadJson($$"""
@@ -271,9 +262,8 @@ public static class ConfigStoreTests
             "config.thread-index-dropped is logged");
     }
 
-    /// Not a numbered case of §11, but the reason `invalid enabled` of S02 §6 is
-    /// unreachable with the `bool? Enabled` member that S05 §3.5 shows (MEASURED: a
-    /// non-boolean token throws JsonException there, and null silently becomes true).
+    /// A plain `bool?` binding could never report this reason: a non-boolean token
+    /// throws JsonException there, and null silently becomes true (measured).
     public static void Test_Rule_NonBooleanEnabled_IsSkippedWithItsOwnReason()
     {
         foreach (string value in new[] { "\"yes\"", "1", "null" })
@@ -405,10 +395,8 @@ public static class ConfigStoreTests
 
         Assert.Equal(1, loaded.RawRules.Rules.Count, "an unknown key inside a rule does not skip it");
         Assert.True(!loaded.RawRules.Rules[0].NeedsReview, "needsReview is never read from the file");
-        Assert.Equal(0, log.Count("unknown field(s) ignored:"), "unknown keys inside rules are not reported (§4.3)");
+        Assert.Equal(0, log.Count("unknown field(s) ignored:"), "unknown keys inside rules are not reported");
     }
-
-    // ── writing ──────────────────────────────────────────────────────────────────────
 
     public static void Test_AtomicWrite_FirstSave()
     {
@@ -416,7 +404,7 @@ public static class ConfigStoreTests
         NewStore(dir, new RecordingLog()).Save(SampleConfig());
 
         Assert.True(File.Exists(Path.Combine(dir.Path, ConfigFile)), "config.json exists after the first save");
-        Assert.True(!File.Exists(Path.Combine(dir.Path, "config.json.tmp")), "the temp file is gone");
+        Assert.True(!File.Exists(Path.Combine(dir.Path, ConfigFileNames.Temp)), "the temp file is gone");
     }
 
     public static void Test_AtomicWrite_OverwritesExisting()
@@ -435,12 +423,12 @@ public static class ConfigStoreTests
     public static void Test_AtomicWrite_OrphanedTempIsOverwritten()
     {
         using var dir = new TempDir();
-        File.WriteAllText(Path.Combine(dir.Path, "config.json.tmp"), "garbage left behind");
+        File.WriteAllText(Path.Combine(dir.Path, ConfigFileNames.Temp), "garbage left behind");
 
         NewStore(dir, new RecordingLog()).Save(SampleConfig());
 
         Assert.True(File.Exists(Path.Combine(dir.Path, ConfigFile)), "the save succeeded");
-        Assert.True(!File.Exists(Path.Combine(dir.Path, "config.json.tmp")), "the orphan was overwritten and consumed");
+        Assert.True(!File.Exists(Path.Combine(dir.Path, ConfigFileNames.Temp)), "the orphan was overwritten and consumed");
     }
 
     public static void Test_AtomicWrite_TransientLockIsRetried()
@@ -476,8 +464,8 @@ public static class ConfigStoreTests
         using var dir = new TempDir();
         var log = new RecordingLog();
         // A DIRECTORY where the temp file has to go: permanently not writable, and
-        // UnauthorizedAccessException is deliberately not retried (§5.3).
-        Directory.CreateDirectory(Path.Combine(dir.Path, "config.json.tmp"));
+        // UnauthorizedAccessException is deliberately not retried.
+        Directory.CreateDirectory(Path.Combine(dir.Path, ConfigFileNames.Temp));
 
         NewStore(dir, log).Save(SampleConfig());
 
@@ -501,8 +489,7 @@ public static class ConfigStoreTests
             "Save never computes or compares the value itself");
     }
 
-    /// Not a numbered case of §11, but the promise of §4.1/D13 that S05 inherited from
-    /// S01 §3.2 by reference — measured, not assumed.
+    /// LF, no BOM, two-space indent — measured, not assumed.
     public static void Test_Save_ProducesLfWithoutBomAndTwoSpaceIndent()
     {
         using var dir = new TempDir();
@@ -529,12 +516,12 @@ public static class ConfigStoreTests
             + "  \"rules\": []\n"
             + "}\n",
             text,
-            "field order and indentation of §3.1/§4.4, one trailing newline like topology.json");
+            "field order and indentation are fixed, one trailing newline like topology.json");
         Assert.True(!text.EndsWith("}\n\n", StringComparison.Ordinal), "exactly one trailing newline, not two");
     }
 
-    /// 02 §6 sells hand-correctability; a name or path is only hand-correctable when it
-    /// stands in the file as itself and not as an escape sequence.
+    /// A name or path is only hand-correctable when it stands in the file as itself
+    /// and not as an escape sequence.
     public static void Test_Save_LeavesNonAsciiAndHtmlCharactersUnescaped()
     {
         using var dir = new TempDir();
@@ -576,7 +563,7 @@ public static class ConfigStoreTests
         Assert.Equal(LastKnownPath, loaded.RawRules.Rules[0].LastKnownPath, "the path survives the round trip");
     }
 
-    /// §5.4/§10.1 promise without qualification that Save returns instead of throwing.
+    /// Save promises without qualification to return instead of throwing.
     /// Directory.CreateDirectory throws ArgumentException on these strings, which is neither
     /// IOException nor UnauthorizedAccessException.
     public static void Test_Save_DegenerateDirectory_DoesNotThrow()
@@ -591,8 +578,6 @@ public static class ConfigStoreTests
                 + "as config.write-failed instead of throwing");
         }
     }
-
-    // ── read failures and recovery ───────────────────────────────────────────────────
 
     public static void Test_Rename_InvalidJson()
     {
@@ -699,7 +684,7 @@ public static class ConfigStoreTests
         Assert.Equal(ConfigLoadOutcome.TooNew, loaded.Outcome, "schemaVersion 99 is too new");
         Assert.Equal(0, loaded.Config.Rules.Rules.Count, "Config.Rules is empty");
         Assert.Equal(0, loaded.RawRules.Rules.Count, "RawRules is empty too — the file is not even parsed for rules");
-        Assert.Equal(before, after, "the file was not touched (criterion 15)");
+        Assert.Equal(before, after, "the file was not touched");
         Assert.True(log.Has("config.json schemaVersion 99 is newer than supported (1), UI is read-only"),
             "config.too-new is logged");
     }
@@ -733,10 +718,8 @@ public static class ConfigStoreTests
 
         Assert.True(!File.Exists(Path.Combine(dir.Path, ConfigFile)), "nothing is persisted");
         Assert.True(log.Has("save discarded: WriteGuard.DebugTopology active"), "config.save-discarded is logged");
-        Assert.True(WriteGuard.NoPersist.CanEditRules, "editing and pinning stay allowed (criterion 3)");
+        Assert.True(WriteGuard.NoPersist.CanEditRules, "editing and pinning stay allowed");
     }
-
-    // ── RawRules and NeedsReview ─────────────────────────────────────────────────────
 
     public static void Test_Load_ReturnsRawRulesSeparately()
     {
@@ -749,7 +732,7 @@ public static class ConfigStoreTests
         }
         """);
 
-        Assert.Equal(0, loaded.Config.Rules.Rules.Count, "Config.Rules is structurally always empty (§8.3)");
+        Assert.Equal(0, loaded.Config.Rules.Rules.Count, "Config.Rules is structurally always empty");
         Assert.Equal(2, loaded.RawRules.Rules.Count, "the real rules live in RawRules");
     }
 
@@ -767,10 +750,8 @@ public static class ConfigStoreTests
 
         Assert.Equal(2, loaded.RawRules.Rules.Count, "both rules load");
         Assert.True(loaded.RawRules.Rules.All(r => !r.NeedsReview),
-            "ConfigStore never sets NeedsReview — that is step 4b of the composition root");
+            "ConfigStore never sets NeedsReview — that is the composition root's job");
     }
-
-    // ── directory ────────────────────────────────────────────────────────────────────
 
     public static void Test_Directory_NotCreatable_LoadReturnsMissing()
     {
@@ -795,9 +776,7 @@ public static class ConfigStoreTests
         Assert.True(!log.Joined.Contains(dir.Path, StringComparison.OrdinalIgnoreCase), "no path in the line");
     }
 
-    // ── log levels ───────────────────────────────────────────────────────────────────
-
-    /// Every wording of S02 §6 is asserted above, no assertion above looks at the level.
+    /// Every event wording is asserted above, no assertion above looks at the level.
     /// config.skipped-file-removed is the only debug event of the config category — raised
     /// to info it would stand in every shipped log.
     public static void Test_LogLevels_OfTheConfigEvents()
@@ -821,8 +800,6 @@ public static class ConfigStoreTests
         Assert.True(log.Has(LogLevel.Debug, "config.skipped.json removed, no rules skipped on this load"),
             "config.skipped-file-removed is debug");
     }
-
-    // ── helpers ──────────────────────────────────────────────────────────────────────
 
     private static ConfigStore NewStore(TempDir dir, RecordingLog log) => new(dir.Path, log, new FakeClock());
 

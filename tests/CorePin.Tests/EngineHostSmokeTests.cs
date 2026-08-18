@@ -1,8 +1,8 @@
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Engine;
-using CorePin.Core.Primitives;
 using CorePin.Core.Rules;
 using CorePin.Tests.Fakes;
+using static CorePin.Tests.Fixtures;
 
 namespace CorePin.Tests;
 
@@ -13,13 +13,6 @@ public static class EngineHostSmokeTests
     private const int WaitMs = 10000;
     private const int MaxFailures = 10;
 
-    private static readonly AffinityMask Machine = AffinityMask.FromThreads([0, 1, 2, 3, 4, 5, 6, 7]);
-    private static readonly AffinityMask FirstHalf = AffinityMask.FromThreads([0, 1, 2, 3]);
-    private static readonly AffinityMask SecondHalf = AffinityMask.FromThreads([4, 5, 6, 7]);
-    private static readonly AffinityMask TwoThreads = AffinityMask.FromThreads([0, 1]);
-    private static readonly DateTime Start = new(2026, 8, 15, 9, 0, 0, DateTimeKind.Utc);
-    private static readonly Guid IdA = new("aaaaaaaa-0000-0000-0000-000000000001");
-    private static readonly Guid IdB = new("bbbbbbbb-0000-0000-0000-000000000002");
     private static readonly Guid IdMarker = new("cccccccc-0000-0000-0000-000000000003");
     private static readonly RuleSet DisabledRule = Set(Rule(IdA, "a.exe", FirstHalf) with { Enabled = false });
 
@@ -251,11 +244,6 @@ public static class EngineHostSmokeTests
     }
 
     private static Rule Marker() => Rule(IdMarker, "marker.exe", FirstHalf) with { Enabled = false };
-
-    private static Rule Rule(Guid id, string exeName, AffinityMask threads)
-        => new() { Id = id, ExeName = exeName, Threads = threads };
-
-    private static RuleSet Set(params Rule[] rules) => new(rules);
 
     private sealed class HostFixture : IDisposable
     {

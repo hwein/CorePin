@@ -1,5 +1,6 @@
 using CorePin.Core.Platform;
 using CorePin.Core.Primitives;
+using CorePin.Interop;
 
 namespace CorePin.Tests.Fakes;
 
@@ -7,8 +8,6 @@ namespace CorePin.Tests.Fakes;
 /// mask; a set outside its system mask fails, which is how a job object is staged.
 public sealed class FakeAffinityAccess : IAffinityAccess
 {
-    private const int InvalidParameter = 87;
-
     private readonly Lock _gate = new();
     private readonly FakeProcessInventory _inventory;
     private readonly AffinityMask _machineMask;
@@ -67,7 +66,7 @@ public sealed class FakeAffinityAccess : IAffinityAccess
         lock (_gate) return ProcessMask(pid);
     }
 
-    /// Stages a foreign change of the process mask (T4) and the state after a restart (T10).
+    /// Stages a foreign change of the process mask and the state after a restart.
     public void SetProcessMask(int pid, AffinityMask mask)
     {
         lock (_gate) _process[pid] = mask;
@@ -98,7 +97,8 @@ public sealed class FakeAffinityAccess : IAffinityAccess
             if (_openFailures.TryGetValue(pid, out var staged))
                 return new ProcessOpenResult(null, staged.Failure, staged.Win32Error);
 
-            if (!_inventory.Knows(pid)) return new ProcessOpenResult(null, OpenFailure.Gone, InvalidParameter);
+            if (!_inventory.Knows(pid))
+                return new ProcessOpenResult(null, OpenFailure.Gone, Win32Error.INVALID_PARAMETER);
 
             return new ProcessOpenResult(new Handle(this, pid), OpenFailure.None, 0);
         }
@@ -132,6 +132,12 @@ public sealed class FakeAffinityAccess : IAffinityAccess
                     LastError = error;
                     return null;
                 }
+                // A PID removed after Open fails like the real port, it never throws.
+                if (!access._inventory.Knows(pid))
+                {
+                    LastError = Win32Error.INVALID_PARAMETER;
+                    return null;
+                }
                 LastError = 0;
                 return access._inventory.StartOf(pid);
             }
@@ -160,9 +166,10 @@ public sealed class FakeAffinityAccess : IAffinityAccess
                     LastError = error;
                     return false;
                 }
-                if (!mask.FitsInto(access.SystemMask(pid)))
+                // The real SetProcessAffinityMask rejects an empty mask with the same code.
+                if (mask.IsEmpty || !mask.FitsInto(access.SystemMask(pid)))
                 {
-                    LastError = InvalidParameter;
+                    LastError = Win32Error.INVALID_PARAMETER;
                     return false;
                 }
 

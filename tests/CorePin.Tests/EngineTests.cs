@@ -1,23 +1,15 @@
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Engine;
 using CorePin.Core.Platform;
-using CorePin.Core.Primitives;
 using CorePin.Core.Rules;
 using CorePin.Tests.Fakes;
+using static CorePin.Tests.Fixtures;
 
 namespace CorePin.Tests;
 
-/// The engine cases of S06 §11.1/§11.2. No thread, no sleep, no real process.
+/// No thread, no sleep, no real process.
 public static class EngineTests
 {
-    private static readonly AffinityMask Machine = AffinityMask.FromThreads([0, 1, 2, 3, 4, 5, 6, 7]);
-    private static readonly AffinityMask FirstHalf = AffinityMask.FromThreads([0, 1, 2, 3]);
-    private static readonly AffinityMask SecondHalf = AffinityMask.FromThreads([4, 5, 6, 7]);
-    private static readonly AffinityMask TwoThreads = AffinityMask.FromThreads([0, 1]);
-    private static readonly DateTime Start = new(2026, 8, 15, 9, 0, 0, DateTimeKind.Utc);
-    private static readonly Guid IdA = new("aaaaaaaa-0000-0000-0000-000000000001");
-    private static readonly Guid IdB = new("bbbbbbbb-0000-0000-0000-000000000002");
-
     private const string TransitionLine = "Information engine rule 'a.exe':";
 
     public static void Test_T01_DeleteIsNotLostAgainstARunningTick()
@@ -155,7 +147,8 @@ public static class EngineTests
 
         Assert.Equal(1, f.Access.SetCalls.Count, "the foreign process is not touched");
         Assert.Equal(0, f.Engine.PinnedProcessCount, "the entry is dropped all the same");
-        Assert.True(!f.Log.Has(LogLevel.Warning), "a recycled PID is not a failure, so no warning is written at all");
+        Assert.True(!f.Log.HasAtOrAbove(LogLevel.Warning),
+            "a recycled PID is not a failure, so no failure-class line is written at all");
         Assert.True(f.Log.Has(LogLevel.Debug, "PID 100 start time mismatch, treated as different process"),
             "it is logged as what it is");
     }
@@ -559,11 +552,6 @@ public static class EngineTests
         Assert.Equal(RuleState.Blocked, f.Engine.ApplyRule(Set(rule with { Enabled = false }), IdA)[0].State,
             "and the rule stays visibly blocked");
     }
-
-    private static Rule Rule(Guid id, string exeName, AffinityMask threads)
-        => new() { Id = id, ExeName = exeName, Threads = threads };
-
-    private static RuleSet Set(params Rule[] rules) => new(rules);
 
     private sealed class Fixture
     {

@@ -1,9 +1,10 @@
+using CorePin.Core.Primitives;
+using CorePin.Core.Rules;
 using CorePin.Core.Topology;
 
 namespace CorePin.Tests;
 
-/// Access to the four frozen dumps (S01 §5.2) and small builders for the ad-hoc
-/// snapshots of S04 §10.7.
+/// Access to the four frozen dumps and small builders for ad-hoc snapshots.
 internal static class Fixtures
 {
     internal const string Ryzen7945HX = "ryzen-9-7945hx.json";
@@ -11,10 +12,24 @@ internal static class Fixtures
     internal const string CoreUltra155H = "core-ultra-7-155h.json";
     internal const string Phoenix2 = "ryzen-5-7545u.json";
 
+    // The engine scaffold both engine suites share: one machine, two rule ids.
+    internal static readonly AffinityMask Machine = AffinityMask.FromThreads([0, 1, 2, 3, 4, 5, 6, 7]);
+    internal static readonly AffinityMask FirstHalf = AffinityMask.FromThreads([0, 1, 2, 3]);
+    internal static readonly AffinityMask SecondHalf = AffinityMask.FromThreads([4, 5, 6, 7]);
+    internal static readonly AffinityMask TwoThreads = AffinityMask.FromThreads([0, 1]);
+    internal static readonly DateTime Start = new(2026, 8, 15, 9, 0, 0, DateTimeKind.Utc);
+    internal static readonly Guid IdA = new("aaaaaaaa-0000-0000-0000-000000000001");
+    internal static readonly Guid IdB = new("bbbbbbbb-0000-0000-0000-000000000002");
+
+    internal static Rule Rule(Guid id, string exeName, AffinityMask threads)
+        => new() { Id = id, ExeName = exeName, Threads = threads };
+
+    internal static RuleSet Set(params Rule[] rules) => new(rules);
+
     internal static string Text(string fileName) => File.ReadAllText(PathOf(fileName));
 
-    /// Raw bytes — ReadAllText would strip a UTF-8 BOM silently, and "no BOM" is part of
-    /// the canonical form (S04 §3.4).
+    /// Raw bytes — ReadAllText would strip a UTF-8 BOM silently, and "no BOM" is part
+    /// of the canonical form.
     internal static byte[] Bytes(string fileName) => File.ReadAllBytes(PathOf(fileName));
 
     private static string PathOf(string fileName)
@@ -69,7 +84,7 @@ internal static class Fixtures
         return mask;
     }
 
-    /// Field-wise description of a CpuTopology for the determinism tests (S04 §10.5).
+    /// Field-wise description of a CpuTopology for the determinism tests.
     /// Test-side output only — there is deliberately no CpuTopology serializer in Core.
     internal static string Describe(CpuTopology topology)
         => string.Join(" | ",
