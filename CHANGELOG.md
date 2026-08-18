@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rules and settings are read from `%LOCALAPPDATA%\CorePin\config.json` at startup.
 - A malformed rule is skipped and listed in `config.skipped.json`; an unreadable config is renamed aside and startup continues.
 - Rules are now applied: programs listed in `config.json` are pinned to their cores and re-pinned if their affinity changes.
+- Tray icon with a context menu: Open CorePin, Copy topology, Open log folder, Exit.
+- Closing the window (X or Esc) hides it to the tray; the process keeps running until Exit.
+- Launching CorePin while it is already running brings the existing window to the front.
+- `--tray` starts CorePin hidden to the tray, without opening the window.
+- The tray icon follows the taskbar theme (light/dark variant).
 
 ### Changed
 

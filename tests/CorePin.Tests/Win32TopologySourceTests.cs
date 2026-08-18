@@ -5,7 +5,7 @@ using CorePin.Interop;
 
 namespace CorePin.Tests;
 
-/// The only tests that reference CorePin.Interop — and all of them are free of native calls.
+/// Tests for the buffer walk — free of native calls, like every CorePin.Interop test.
 public static class Win32TopologySourceTests
 {
     private const string RecordedBuffer = "ryzen-9-7945hx.buffer.b64";

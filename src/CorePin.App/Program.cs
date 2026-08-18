@@ -6,7 +6,6 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using CorePin.Core.Configuration;
 using CorePin.Core.Diagnostics;
-using CorePin.Core.Engine;
 using CorePin.Core.Paths;
 using CorePin.Core.Platform;
 using CorePin.Core.Time;
@@ -53,7 +52,14 @@ internal static class Program
         }
         catch (Exception ex) { MessageBoxes.ShowTopologyReadFailed(ex); return 4; }
 
-        // 2. Single instance is not implemented yet.
+        // 2. Single instance — before the logger: the rolling log file must never be opened twice.
+        if (!SingleInstance.TryAcquire(out var acquired))
+        {
+            SingleInstance.SignalExisting();
+            return 0;
+        }
+        using var mutex = acquired;
+
         using var log = FileLog.Create(paths.LogDirectory,
                                        opts.LogLevelOverride ?? LogLevel.Information, clock);
 
@@ -132,15 +138,8 @@ internal static class Program
                 $"logicalProcessors changed: {loaded.Config.Machine.LogicalProcessors} -> {topology.LogicalProcessorCount}, all rules marked Needs review"));
         }
 
-        // 5./6./7. Tray, watcher, window. Only the watcher exists yet; `rules` and `guard`
-        //    are built here but not yet handed on to App.
-        var engine = new AffinityEngine(new ProcessInventory(), new AffinityAccess(), clock, log,
-                                        topology.MachineMask);
-        using var watcher = new EngineHost(engine, clock, log, loaded.Config.Settings.PollIntervalMs);
-        watcher.Submit(rules, new RuleChange(RuleChangeKind.None, Guid.Empty));
-        watcher.Start();
-
-        var app = new App();
+        // 5./6./7. Tray, watcher, window — all of it inside App.OnStartup, once WPF runs.
+        var app = new App(log, clock, topology, config, loaded, rules, guard, opts);
         app.InitializeComponent();
         try
         {
@@ -153,11 +152,7 @@ internal static class Program
             throw;
         }
 
-        int exitCode = app.Run();
-        watcher.Stop();
-
-        log.WriteAlways(LogLevel.Information, "app", $"CorePin exiting (code {exitCode})");
-        return exitCode;
+        return app.Run();
     }
 
     private static string Version()

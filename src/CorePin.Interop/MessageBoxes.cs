@@ -42,6 +42,15 @@ public static class MessageBoxes
         MessageBox(0, text, Caption, MB_OK | MB_ICONINFORMATION);
     }
 
+    /// The first instance is running in both readings of the mutex question, so: information.
+    public static void ShowSecondInstanceUnreachable()
+    {
+        const string text =
+            "CorePin already appears to be running. If its window or tray icon doesn't "
+            + "appear shortly, check Task Manager for a CorePin.exe process.";
+        MessageBox(0, text, Caption, MB_OK | MB_ICONINFORMATION);
+    }
+
 #if DEBUG
     public static void ShowFixtureTooLarge(int fixtureLp, int machineLp)
     {
