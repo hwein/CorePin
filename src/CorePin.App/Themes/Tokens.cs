@@ -61,8 +61,8 @@ public static class Tokens
 
     private static void ValidateRadiusPairConsistency(string name)
     {
-        var typed = (CornerRadius)Application.Current.Resources[$"CorePin.Radius.{name}"];
-        var value = (double)Application.Current.Resources[$"CorePin.RadiusValue.{name}"];
+        var typed = Read<CornerRadius>($"CorePin.Radius.{name}");
+        var value = Read<double>($"CorePin.RadiusValue.{name}");
         if (typed.TopLeft != value)
             throw new InvalidOperationException(
                 $"CorePin.Radius.{name} ({typed.TopLeft}) and CorePin.RadiusValue.{name} " +

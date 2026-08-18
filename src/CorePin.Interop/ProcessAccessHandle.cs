@@ -19,7 +19,7 @@ internal sealed class ProcessAccessHandle : IProcessHandle
         bool ok = NativeMethods.QueryFullProcessImageName(_handle, 0, buffer, ref size);
         LastError = ok ? 0 : Marshal.GetLastPInvokeError();
         if (!ok) return null;
-        return Path.GetFileName(buffer[..(int)size].ToString());
+        return Path.GetFileName(buffer[..(int)size]).ToString();
     }
 
     public DateTime? QueryStartTimeUtc()

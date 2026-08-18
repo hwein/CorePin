@@ -34,6 +34,8 @@ public sealed class EngineHost : IDisposable
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(log);
+        // 0 would spin the loop hot, a negative value would throw on the worker thread.
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pollIntervalMs);
 
         _engine = engine;
         _clock = clock;

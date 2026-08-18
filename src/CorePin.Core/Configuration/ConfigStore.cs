@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Rules;
@@ -102,7 +103,8 @@ public sealed class ConfigStore
         GuardReason.ConfigTooNew => WriteGuard.ReadOnly,
         GuardReason.ConfigUnreadable => WriteGuard.Unreadable,
         GuardReason.DebugTopology => WriteGuard.NoPersist,
-        _ => WriteGuard.Open,
+        GuardReason.None => WriteGuard.Open,
+        _ => throw new UnreachableException(),
     };
 
     private static ConfigLoadResult Defaults(ConfigLoadOutcome outcome)
