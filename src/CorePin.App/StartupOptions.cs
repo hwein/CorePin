@@ -46,9 +46,10 @@ public sealed record StartupOptions
 
             if (Is(arg, "--log-level"))
             {
+                // The last occurrence wins entirely; a stale sibling state would log a lie.
                 string? value = Value(args, ref i);
-                if (TryParseLevel(value, out var parsed)) level = parsed;
-                else invalid = value ?? string.Empty;
+                if (LogLevelNames.TryParse(value, out var parsed)) { level = parsed; invalid = null; }
+                else { invalid = value ?? string.Empty; level = null; }
                 continue;
             }
 
@@ -89,22 +90,4 @@ public sealed record StartupOptions
 
     private static string? Value(string[] args, ref int i)
         => i + 1 < args.Length ? args[++i] : null;
-
-    private static bool TryParseLevel(string? value, out LogLevel level)
-    {
-        level = LogLevel.Information;
-        if (value is null) return false;
-
-        if (string.Equals(value, "trace", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Trace;
-        else if (string.Equals(value, "debug", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Debug;
-        else if (string.Equals(value, "information", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Information;
-        else if (string.Equals(value, "info", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Information;
-        else if (string.Equals(value, "warning", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Warning;
-        else if (string.Equals(value, "warn", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Warning;
-        else if (string.Equals(value, "error", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Error;
-        else if (string.Equals(value, "critical", StringComparison.OrdinalIgnoreCase)) level = LogLevel.Critical;
-        else return false;
-
-        return true;
-    }
 }

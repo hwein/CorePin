@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -5,7 +6,7 @@ using CorePin.Core.Diagnostics;
 
 namespace CorePin.Core.Configuration;
 
-/// Writes config.json or nothing: every failure ends in a warn line, none in an exception.
+/// Writes config.json or nothing: every failure ends in a log line, none in an exception.
 internal sealed class ConfigFileWriter(string directory, ILog log)
 {
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
@@ -27,7 +28,8 @@ internal sealed class ConfigFileWriter(string directory, ILog log)
         catch (Exception ex)
         {
             // Serialization sits INSIDE the try: Save() must never throw. Not retryable.
-            log.Error("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
+            log.Error("config", string.Create(CultureInfo.InvariantCulture,
+                $"write failed: {ex.GetType().Name} {ex.HResult}"));
             return;
         }
 
@@ -42,14 +44,15 @@ internal sealed class ConfigFileWriter(string directory, ILog log)
             }
             catch (IOException ex) when (attempt < backoffMs.Length)
             {
-                log.Warning("config",
-                    $"write attempt {attempt + 1} failed: {ex.GetType().Name} {ex.HResult}, retrying");
+                log.Warning("config", string.Create(CultureInfo.InvariantCulture,
+                    $"write attempt {attempt + 1} failed: {ex.GetType().Name} {ex.HResult}, retrying"));
                 Thread.Sleep(backoffMs[attempt]);
             }
             catch (Exception ex)
             {
                 // Catch-all so Save never throws; no ex.Message — it can carry the user name.
-                log.Error("config", $"write failed: {ex.GetType().Name} {ex.HResult}");
+                log.Error("config", string.Create(CultureInfo.InvariantCulture,
+                    $"write failed: {ex.GetType().Name} {ex.HResult}"));
                 return;
             }
         }
@@ -89,7 +92,7 @@ internal sealed class ConfigFileWriter(string directory, ILog log)
                 PollIntervalMs = config.Settings.PollIntervalMs,
                 StartWithWindows = config.Settings.StartWithWindows,
                 WindowBounds = ToJson(config.Settings.WindowBounds),
-                LogLevel = config.Settings.LogLevel.ToString().ToLowerInvariant(),
+                LogLevel = LogLevelNames.Format(config.Settings.LogLevel),
             },
             Rules = [.. config.Rules.Rules.Select(r => new RuleWriteDto
             {

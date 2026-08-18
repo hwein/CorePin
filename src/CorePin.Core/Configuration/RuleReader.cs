@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Primitives;
@@ -90,7 +91,8 @@ internal sealed class RuleReader(ILog log)
         {
             if ((uint)thread > MaxThreadIndex)
             {
-                log.Warning("config", $"rule '{exeName}': thread index {thread} out of range, dropped");
+                log.Warning("config", string.Create(CultureInfo.InvariantCulture,
+                    $"rule '{exeName}': thread index {thread} out of range, dropped"));
                 continue;
             }
             kept.Add(thread);

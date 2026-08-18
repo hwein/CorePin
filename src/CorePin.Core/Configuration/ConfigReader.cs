@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using CorePin.Core.Diagnostics;
 
@@ -125,11 +126,13 @@ internal sealed class ConfigReader(ILog log)
 
     private Settings ReadSettings(SettingsJson? settings)
     {
-        if (settings is null) return new Settings();
+        // The record defaults are the single source; per-key literals would drift silently.
+        var defaults = new Settings();
+        if (settings is null) return defaults;
 
         int pollIntervalMs = ReadRawInt(settings.PollIntervalMs, out int raw) switch
         {
-            RawIntKind.Missing => 1000,
+            RawIntKind.Missing => defaults.PollIntervalMs,
             RawIntKind.Value => ClampPollInterval(raw),
             RawIntKind.WrongType => throw new ConfigFormatException("settings.pollIntervalMs"),
             _ => throw new UnreachableException(),
@@ -138,8 +141,8 @@ internal sealed class ConfigReader(ILog log)
         return new Settings
         {
             PollIntervalMs = pollIntervalMs,
-            StartWithWindows = settings.StartWithWindows ?? "normal",
-            LogLevel = ReadLogLevel(settings.LogLevel),
+            StartWithWindows = settings.StartWithWindows ?? defaults.StartWithWindows,
+            LogLevel = ReadLogLevel(settings.LogLevel, defaults.LogLevel),
             WindowBounds = ReadWindowBounds(settings.WindowBounds),
         };
     }
@@ -149,21 +152,15 @@ internal sealed class ConfigReader(ILog log)
         if (value >= MinPollIntervalMs && value <= MaxPollIntervalMs) return value;
 
         int clamped = value < MinPollIntervalMs ? MinPollIntervalMs : MaxPollIntervalMs;
-        log.Warning("config", $"pollIntervalMs {value} out of range, clamped to {clamped}");
+        log.Warning("config", string.Create(CultureInfo.InvariantCulture,
+            $"pollIntervalMs {value} out of range, clamped to {clamped}"));
         return clamped;
     }
 
-    private LogLevel ReadLogLevel(string? value)
+    private LogLevel ReadLogLevel(string? value, LogLevel missing)
     {
-        if (value is null) return LogLevel.Information;
-        if (string.Equals(value, "trace", StringComparison.OrdinalIgnoreCase)) return LogLevel.Trace;
-        if (string.Equals(value, "debug", StringComparison.OrdinalIgnoreCase)) return LogLevel.Debug;
-        if (string.Equals(value, "information", StringComparison.OrdinalIgnoreCase)) return LogLevel.Information;
-        if (string.Equals(value, "info", StringComparison.OrdinalIgnoreCase)) return LogLevel.Information;
-        if (string.Equals(value, "warning", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warning;
-        if (string.Equals(value, "warn", StringComparison.OrdinalIgnoreCase)) return LogLevel.Warning;
-        if (string.Equals(value, "error", StringComparison.OrdinalIgnoreCase)) return LogLevel.Error;
-        if (string.Equals(value, "critical", StringComparison.OrdinalIgnoreCase)) return LogLevel.Critical;
+        if (value is null) return missing;
+        if (LogLevelNames.TryParse(value, out var level)) return level;
 
         log.Warning("config",
             $"settings.logLevel '{value}' is not a valid level "
@@ -177,7 +174,8 @@ internal sealed class ConfigReader(ILog log)
 
         if (bounds.W < MinWindowWidth || bounds.H < MinWindowHeight)
         {
-            log.Warning("config", $"windowBounds {bounds.W}x{bounds.H} below minimum size, discarded");
+            log.Warning("config", string.Create(CultureInfo.InvariantCulture,
+                $"windowBounds {bounds.W}x{bounds.H} below minimum size, discarded"));
             return null;
         }
         return new WindowBounds(bounds.X, bounds.Y, bounds.W, bounds.H);

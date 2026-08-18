@@ -108,9 +108,8 @@ internal static class Program
         if (opts.LogLevelOverride is { } forced)
         {
             log.Minimum = forced;
-            // Level names are written lower case, unlike the enum member.
             log.WriteAlways(LogLevel.Information, "app",
-                $"--log-level {forced.ToString().ToLowerInvariant()} overrides config.json settings.logLevel for this session");
+                $"--log-level {LogLevelNames.Format(forced)} overrides config.json settings.logLevel for this session");
         }
         else
         {

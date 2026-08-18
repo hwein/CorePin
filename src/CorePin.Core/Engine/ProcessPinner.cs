@@ -46,8 +46,9 @@ internal sealed class ProcessPinner(IAffinityAccess access, ILog log, PinList pi
         var handle = opened.Handle;
         if (opened.Failure != OpenFailure.None || handle is null)
         {
-            log.Debug("engine", $"rule '{rule.ExeName}': OpenProcess PID {process.Pid} failed, " +
-                                $"Win32 {opened.Win32Error} {Win32ErrorNames.Of(opened.Win32Error)}");
+            if (log.IsEnabled(LogLevel.Debug))
+                log.Debug("engine", $"rule '{rule.ExeName}': OpenProcess PID {process.Pid} failed, " +
+                                    $"Win32 {opened.Win32Error} {Win32ErrorNames.Of(opened.Win32Error)}");
             return PinResult.NeedsAdminRights;
         }
 
@@ -73,8 +74,9 @@ internal sealed class ProcessPinner(IAffinityAccess access, ILog log, PinList pi
 
             if (pair.Value.Process != rule.Threads && !handle.SetAffinity(rule.Threads))
             {
-                log.Debug("engine", $"rule '{rule.ExeName}': SetAffinity PID {process.Pid} failed, " +
-                                    $"Win32 {handle.LastError} {Win32ErrorNames.Of(handle.LastError)}");
+                if (log.IsEnabled(LogLevel.Debug))
+                    log.Debug("engine", $"rule '{rule.ExeName}': SetAffinity PID {process.Pid} failed, " +
+                                        $"Win32 {handle.LastError} {Win32ErrorNames.Of(handle.LastError)}");
                 return PinResult.BlockedByWindows;   // an existing entry is neither added nor removed
             }
 

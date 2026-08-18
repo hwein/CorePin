@@ -54,10 +54,11 @@ internal sealed class ColdStartGate(LogLevel minimum, Action<LogEntry> emit)
     private void Release()
     {
         var pending = _buffered;
-        _buffered = null;
         if (pending is null) return;
 
         foreach (var entry in pending) Pass(entry);
+        // Nulled only after the replay, or Submit's lock-free path overtakes buffered lines.
+        _buffered = null;
     }
 
     private void Pass(LogEntry entry)
