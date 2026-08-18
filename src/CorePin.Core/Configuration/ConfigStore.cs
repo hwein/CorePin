@@ -119,7 +119,15 @@ public sealed class ConfigStore
 
     private ConfigLoadResult Corrupt(string path)
     {
-        string name = _sideFiles.RenameCorrupt(path);
+        _sideFiles.UpdateSkipped([]);
+
+        string? name = _sideFiles.RenameCorrupt(path);
+        if (name is null)
+        {
+            _log.Warning("config", "config.json unreadable, rename failed, starting with defaults");
+            return new ConfigLoadResult(AppConfig.Empty(), RuleSet.Empty, ConfigLoadOutcome.Corrupt, null, 0);
+        }
+
         _log.Warning("config", $"config.json unreadable, renamed to {name}, starting with defaults");
         return new ConfigLoadResult(AppConfig.Empty(), RuleSet.Empty, ConfigLoadOutcome.Corrupt, name, 0);
     }

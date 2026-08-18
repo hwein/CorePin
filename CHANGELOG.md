@@ -26,3 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The log uses the standard .NET level names; the old values `info` and `warn` are still accepted.
+
+### Fixed
+
+- An unreadable config that cannot be renamed aside is reported as such instead of claiming a rename.
+- A stale `config.skipped.json` no longer survives a load that ends with an unreadable config.
+- A rule without an `exeName` is skipped with its own reason instead of `malformed entry`.

@@ -243,6 +243,23 @@ public static class ConfigStoreTests
         Assert.True(log.Has("rule at index 0 skipped: missing/invalid id"), "config.rule-skipped carries the index");
     }
 
+    public static void Test_Rule_MissingOrEmptyExeName_IsSkipped()
+    {
+        var (loaded, log) = LoadJson($$"""
+        {
+          "rules": [
+            { "id": "{{IdA}}", "threads": [0] },
+            { "id": "{{IdB}}", "exeName": "  ", "threads": [1] }
+          ]
+        }
+        """);
+
+        Assert.Equal(0, loaded.RawRules.Rules.Count, "both a missing and a blank exeName drop the rule");
+        Assert.Equal(2, loaded.RulesSkipped, "both rules were skipped");
+        Assert.True(log.Has("rule at index 0 skipped: missing exeName"), "a missing exeName key is reported by name");
+        Assert.True(log.Has("rule at index 1 skipped: missing exeName"), "a whitespace-only exeName trims to empty, same reason");
+    }
+
     public static void Test_Rule_EmptyThreads_IsSkipped()
     {
         var (loaded, log) = LoadJson($$"""{ "rules": [ { "id": "{{IdA}}", "exeName": "a.exe", "threads": [] } ] }""");
@@ -359,6 +376,24 @@ public static class ConfigStoreTests
         Assert.True(!File.Exists(Path.Combine(dir.Path, SkippedFile)), "a clean load removes the stale file");
         Assert.True(log.Has("config.skipped.json removed, no rules skipped on this load"),
             "config.skipped-file-removed is logged");
+    }
+
+    public static void Test_SkippedFile_IsRemovedOnCorruptLoad()
+    {
+        using var dir = new TempDir();
+        var log = new RecordingLog();
+
+        Write(dir, $$"""{ "rules": [ { "exeName": "a.exe", "threads": [0] } ] }""");
+        NewStore(dir, log).Load();
+        Assert.True(File.Exists(Path.Combine(dir.Path, SkippedFile)), "the skipped file exists after the broken-rule load");
+
+        Write(dir, "{ broken");
+        var loaded = NewStore(dir, log).Load();
+
+        Assert.Equal(ConfigLoadOutcome.Corrupt, loaded.Outcome, "precondition: this load is corrupt");
+        Assert.True(!File.Exists(Path.Combine(dir.Path, SkippedFile)), "a corrupt load also removes the stale skipped file");
+        Assert.True(log.Has("config.skipped.json removed, no rules skipped on this load"),
+            "config.skipped-file-removed fires on the Corrupt path too");
     }
 
     public static void Test_SkippedFile_IsOverwrittenNotAppended()
@@ -624,6 +659,7 @@ public static class ConfigStoreTests
     {
         using var dir = new TempDir();
         var clock = new FakeClock();
+        var log = new RecordingLog();
         Write(dir, "{ broken");
 
         // A DIRECTORY under the name the rename is going to pick: File.Exists says no, so
@@ -631,10 +667,44 @@ public static class ConfigStoreTests
         string stamp = clock.UtcNow.ToLocalTime().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         Directory.CreateDirectory(Path.Combine(dir.Path, $"config.corrupt-{stamp}.json"));
 
-        var loaded = new ConfigStore(dir.Path, new RecordingLog(), clock).Load();
+        var loaded = new ConfigStore(dir.Path, log, clock).Load();
 
         Assert.Equal(ConfigLoadOutcome.Corrupt, loaded.Outcome, "the outcome is Corrupt even when the rename fails");
         Assert.True(File.Exists(Path.Combine(dir.Path, ConfigFile)), "the original file stays under its old name");
+        Assert.True(loaded.Detail is null, "Detail is null when the rename failed");
+        Assert.True(log.Has("config.json unreadable, rename failed, starting with defaults"),
+            "the failed rename gets its own log line, not the renamed-to one");
+        Assert.True(!log.Has("config.skipped.json removed, no rules skipped on this load"),
+            "no skipped file existed, so the cleanup call logs nothing");
+    }
+
+    public static void Test_Rename_Fails_SkippedFileIsStillRemoved()
+    {
+        using var dir = new TempDir();
+        var clock = new FakeClock();
+        var log = new RecordingLog();
+
+        Write(dir, $$"""{ "rules": [ { "exeName": "a.exe", "threads": [0] } ] }""");
+        new ConfigStore(dir.Path, log, clock).Load();
+        Assert.True(File.Exists(Path.Combine(dir.Path, SkippedFile)), "the skipped file exists after the broken-rule load");
+
+        Write(dir, "{ broken");
+
+        // Same forced-failure scaffold as Test_Rename_Fails_LoadStillDoesNotThrow: a DIRECTORY
+        // under the name the rename is going to pick makes File.Move fail.
+        string stamp = clock.UtcNow.ToLocalTime().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        Directory.CreateDirectory(Path.Combine(dir.Path, $"config.corrupt-{stamp}.json"));
+
+        var loaded = new ConfigStore(dir.Path, log, clock).Load();
+
+        Assert.Equal(ConfigLoadOutcome.Corrupt, loaded.Outcome, "the outcome is Corrupt even when the rename fails");
+        Assert.True(loaded.Detail is null, "Detail is still null when the rename fails");
+        Assert.True(!File.Exists(Path.Combine(dir.Path, SkippedFile)),
+            "the stale skipped file is removed even though the rename itself failed");
+        Assert.True(log.Has("config.skipped.json removed, no rules skipped on this load"),
+            "the cleanup runs and logs regardless of the rename outcome");
+        Assert.True(log.Has("config.json unreadable, rename failed, starting with defaults"),
+            "the failed rename still gets its own log line");
     }
 
     public static void Test_Unreadable_NoRenameNoWrite()

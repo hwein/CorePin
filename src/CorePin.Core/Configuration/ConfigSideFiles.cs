@@ -11,15 +11,12 @@ internal sealed class ConfigSideFiles(string directory, ILog log, IClock clock)
 {
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
-    /// Returns the name the file now carries — the old one if the rename did not take.
-    public string RenameCorrupt(string path)
+    /// Returns the name the file was renamed to, or null if the rename failed (old name kept).
+    public string? RenameCorrupt(string path)
     {
         string name = FreeCorruptName();
         try { File.Move(path, Path.Combine(directory, name)); }
-        catch (Exception)
-        {
-            // If the rename fails, the file keeps its name and the outcome is still Corrupt.
-        }
+        catch (Exception) { return null; }
         return name;
     }
 

@@ -72,8 +72,7 @@ internal sealed class RuleReader(ILog log)
         if (!Guid.TryParse(dto.Id, out var id)) { reason = "missing/invalid id"; return false; }
 
         string exeName = (dto.ExeName ?? string.Empty).Trim();
-        // `malformed entry` is the only one of the four skip reasons that fits an empty name.
-        if (exeName.Length == 0) { reason = "malformed entry"; return false; }
+        if (exeName.Length == 0) { reason = "missing exeName"; return false; }
 
         bool enabled;
         switch (dto.Enabled.ValueKind)
