@@ -3,8 +3,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-  <!-- Spacing scale, 01 §2 — nothing in between. sys:Double for Width/Height/RowDefinition
-       and for S10's DrawingContext calls; the same values ONCE MORE as Thickness for
+  <!-- Spacing scale — nothing in between. sys:Double for Width/Height/RowDefinition and
+       for the CPU map's DrawingContext calls; the same values ONCE MORE as Thickness for
        Margin/Padding (uniform) — WPF applies NO type converter to the result of a
        {StaticResource}, so a sys:Double cannot be bound to CornerRadius/Thickness directly
        (runtime error "'8' is not a valid value for property..."). Both forms therefore
@@ -20,11 +20,11 @@
   <Thickness x:Key="CorePin.Thickness.12">12</Thickness>
   <Thickness x:Key="CorePin.Thickness.16">16</Thickness>
   <Thickness x:Key="CorePin.Thickness.24">24</Thickness>
-  <!-- Asymmetric values (e.g. "12,8,12,8") belong to the consuming spec (S09/S11) and are
-       composed there inline from the spacing values, not stocked here — 01 §2 defines a
-       scale, not ready-made paddings per control. -->
+  <!-- Asymmetric values (e.g. "12,8,12,8") are composed inline at the consuming view from
+       the spacing values, not stocked here — this is a scale, not ready-made paddings per
+       control. -->
 
-  <!-- Radii, 01 §2. CornerRadius for XAML, RadiusValue (double) for S10/code, see above. -->
+  <!-- Radii. CornerRadius for XAML, RadiusValue (double) for the CPU map's code, see above. -->
   <CornerRadius x:Key="CorePin.Radius.Window">8</CornerRadius>
   <CornerRadius x:Key="CorePin.Radius.Card">6</CornerRadius>
   <CornerRadius x:Key="CorePin.Radius.CoreCell">3</CornerRadius>
@@ -34,7 +34,7 @@
   <sys:Double x:Key="CorePin.RadiusValue.CoreCell">3</sys:Double>
   <sys:Double x:Key="CorePin.RadiusValue.Button">4</sys:Double>
 
-  <!-- Typography, 01 §2 -->
+  <!-- Typography -->
   <FontFamily x:Key="CorePin.Font.UI">Segoe UI Variable Text, Segoe UI, Global Sans Serif</FontFamily>
   <FontFamily x:Key="CorePin.Font.Heading">Segoe UI Variable Display, Segoe UI Semibold, Segoe UI, Global Sans Serif</FontFamily>
   <FontFamily x:Key="CorePin.Font.Mono">Cascadia Mono, Consolas, Courier New</FontFamily>
@@ -43,12 +43,12 @@
   <sys:Double x:Key="CorePin.FontSize.Mono">11</sys:Double>
   <FontWeight x:Key="CorePin.FontWeight.Heading">SemiBold</FontWeight>
 
-  <!-- Density, 01 §2 -->
+  <!-- Density -->
   <sys:Double x:Key="CorePin.Height.RuleRow">44</sys:Double>
   <sys:Double x:Key="CorePin.HitTarget.MinWidth">20</sys:Double>
   <sys:Double x:Key="CorePin.HitTarget.MinHeight">28</sys:Double>
 
-  <!-- Status colours — theme independent, 01 §2. NO red: see S03 §4.4. -->
+  <!-- Status colours — theme independent. NO red. -->
   <Color x:Key="CorePin.Color.StatusApplied">#3FB950</Color>
   <Color x:Key="CorePin.Color.StatusBlocked">#D29922</Color>
   <Color x:Key="CorePin.Color.StatusIdle">#6E6E6E</Color>

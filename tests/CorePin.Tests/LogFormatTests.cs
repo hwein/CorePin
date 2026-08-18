@@ -11,7 +11,7 @@ public static class LogFormatTests
     {
         string line = FileLog.FormatLine(new LogEntry(Stamp, LogLevel.Information, "app", "hello"));
 
-        Assert.Equal("2026-08-15T09:12:03.001Z", line[..24], "timestamp, 24 characters (S02 §4.1)");
+        Assert.Equal("2026-08-15T09:12:03.001Z", line[..24], "timestamp, 24 characters");
         Assert.Equal(' ', line[24], "separator after the timestamp");
         Assert.Equal("INFO ", line.Substring(25, 5), "level, 5 characters");
         Assert.Equal("app     ", line.Substring(31, 8), "category, field width 8");
@@ -50,7 +50,7 @@ public static class LogFormatTests
     public static void Test_Format_EmbeddedLineBreaksAreEscaped()
     {
         string line = FileLog.FormatLine(new LogEntry(Stamp, LogLevel.Information, "app", "a\r\nb\nc\rd"));
-        Assert.Equal(@"a\nb\nc\nd", line[40..], "embedded line breaks become \\n (S02 §3.4)");
+        Assert.Equal(@"a\nb\nc\nd", line[40..], "embedded line breaks become \\n");
         Assert.True(!line.Contains('\n', StringComparison.Ordinal), "no real line break inside the line");
     }
 }

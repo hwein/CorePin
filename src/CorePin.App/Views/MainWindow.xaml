@@ -8,7 +8,7 @@
         Background="{DynamicResource CorePin.Brush.WindowBackground}">
   <!-- Gate G0: empty window. The single line shows that the font tokens apply. No Foreground:
        under path A stock controls keep Fluent's own text colour, CorePin.Brush.Text* is for
-       self-drawn surfaces only (S03 §4.5). -->
+       self-drawn surfaces only. -->
   <TextBlock Margin="{StaticResource CorePin.Thickness.16}"
              VerticalAlignment="Top"
              FontFamily="{StaticResource CorePin.Font.UI}"

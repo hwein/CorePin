@@ -21,7 +21,7 @@ public static class TestRunner
         }
 
         // A filter that matches nothing is a runner error, not a green run: a typo in the
-        // filter would otherwise be indistinguishable from "everything passed" (S01 §5.1).
+        // filter would otherwise be indistinguishable from "everything passed".
         // Without a filter an empty run stays exit code 0.
         if (filter is not null && tests.Count == 0)
         {
@@ -113,7 +113,7 @@ public static class Assert
     }
 }
 
-/// Temporary directory for the FileLog tests (S01 §5.1).
+/// Self-deleting temporary directory for tests that touch the file system.
 public sealed class TempDir : IDisposable
 {
     public TempDir()

@@ -8,7 +8,7 @@ public static class AppPathsTests
     /// machine on which %LOCALAPPDATA%\CorePin\logs does not exist yet, and on a developer
     /// machine it always does — the check would compare true with true. Provable without
     /// an injection layer is only that the paths are pure Path.Combine arithmetic over
-    /// Environment.GetFolderPath and that no call throws (S01 §2.4, S05 Ä-5).
+    /// Environment.GetFolderPath and that no call throws.
     public static void Test_ComposesPathsFromLocalAppData()
     {
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

@@ -3,8 +3,7 @@ using CorePin.Core.Rules;
 
 namespace CorePin.Tests;
 
-/// The parts of the S01 §3.4 contract that S05 needs. RuleEvaluation is covered here only
-/// for the binding check order — the engine-side cases belong to S06.
+/// RuleSet basics and RuleEvaluation's binding check order; engine cases live in EngineTests.
 public static class RulesTests
 {
     private static readonly AffinityMask Machine = AffinityMask.FromThreads([0, 1, 2, 3]);
@@ -43,7 +42,7 @@ public static class RulesTests
 
         source.Add(Rule("b.exe", 1));
 
-        Assert.Equal(1, set.Rules.Count, "RuleSet copies on construction (S01 §3.4)");
+        Assert.Equal(1, set.Rules.Count, "RuleSet copies on construction");
     }
 
     public static void Test_RuleEvaluation_FollowsTheBindingOrder()

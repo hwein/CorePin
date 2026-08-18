@@ -3,7 +3,7 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
-        <!-- 02 §7, S01 §6.2 — CorePin never requests admin rights automatically -->
+        <!-- CorePin never requests admin rights automatically -->
         <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
       </requestedPrivileges>
     </security>

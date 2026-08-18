@@ -4,14 +4,14 @@ using CorePin.Core.Topology;
 
 namespace CorePin.Tests;
 
-/// Format, serialisation and round trip (S04 §10.4).
+/// Format, serialisation and round trip.
 public static class TopologyJsonTests
 {
     private static readonly string[] AllFixtures =
         [Fixtures.Ryzen7945HX, Fixtures.Core14900K, Fixtures.CoreUltra155H, Fixtures.Phoenix2];
 
-    /// The only safeguard of the byte stability of criterion 13. The expectation stands
-    /// in C#, never in a golden file (S01 A13).
+    /// The only safeguard of byte-for-byte serializer stability. The expectation stands
+    /// in C#, never in a golden file.
     public static void Test_SerializeProducesExactText()
     {
         var snapshot = Fixtures.Snapshot(
@@ -36,7 +36,7 @@ public static class TopologyJsonTests
             + "}\n";
 
         Assert.Equal(expected, TopologyJson.Serialize(snapshot),
-            "the canonical form of S04 §3.4 is exact, down to the trailing newline");
+            "the canonical form is exact, down to the trailing newline");
     }
 
     public static void Test_RoundTripIsIdentical()
@@ -49,12 +49,12 @@ public static class TopologyJsonTests
         }
     }
 
-    /// The fourth fixture is excluded: it carries a header comment (S04 §9.4) and the
+    /// The fourth fixture is excluded: it carries a header comment and the
     /// serializer writes no comments.
     public static void Test_ThreeDumpsAreCanonical()
     {
         // Compared as BYTES: File.ReadAllText strips a UTF-8 BOM silently, which would
-        // leave the "UTF-8, no BOM" half of S04 §3.4 untested (criterion 13).
+        // leave the "UTF-8, no BOM" requirement untested.
         var utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         foreach (string name in new[] { Fixtures.Ryzen7945HX, Fixtures.Core14900K, Fixtures.CoreUltra155H })
@@ -63,7 +63,7 @@ public static class TopologyJsonTests
             string canonical = TopologyJson.Serialize(TopologyJson.Parse(utf8NoBom.GetString(onDisk)));
 
             Assert.Equal(Convert.ToHexString(onDisk), Convert.ToHexString(utf8NoBom.GetBytes(canonical)),
-                $"{name} is already in canonical form, byte for byte (LF, no BOM, criterion 13)");
+                $"{name} is already in canonical form, byte for byte (LF, no BOM)");
         }
     }
 
@@ -121,8 +121,8 @@ public static class TopologyJsonTests
                      "extra fields on both levels change nothing");
     }
 
-    /// The comma-as-decimal-separator trap. InvariantGlobalization is deliberately NOT set
-    /// (S01 §6.2/A16), so de-DE really can be created here.
+    /// The comma-as-decimal-separator trap. InvariantGlobalization is deliberately NOT
+    /// set, so de-DE really can be created here.
     public static void Test_NoCultureDependency()
     {
         var snapshot = Fixtures.Load(Fixtures.Ryzen7945HX);
@@ -143,10 +143,7 @@ public static class TopologyJsonTests
         }
     }
 
-    // ── helpers ─────────────────────────────────────────────────────────────────────
-
-    /// Seven top-level fields plus the five record fields. S04 §3.6/§10.4 speak of "the
-    /// eight mandatory fields"; TopologySnapshot has seven top-level properties.
+    /// Seven top-level fields plus the five record fields.
     private static readonly string[] MandatoryFields =
         ["capturedBy", "constructed", "vendor", "cpuName", "activeGroupCount", "cores", "caches",
          "mask", "efficiencyClass", "smt", "level", "sizeBytes"];

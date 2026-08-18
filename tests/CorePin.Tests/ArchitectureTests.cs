@@ -5,8 +5,7 @@ namespace CorePin.Tests;
 
 public static class ArchitectureTests
 {
-    /// Executable copy of the matrix in S01 §2.5. Both must be changed together; the test
-    /// cannot read the markdown table.
+    /// Which CorePin.Core module may use which — the matrix the dependency test enforces.
     private static readonly Dictionary<string, string[]> Allowed = new(StringComparer.Ordinal)
     {
         ["Primitives"] = [],
@@ -40,7 +39,7 @@ public static class ArchitectureTests
         }
 
         Assert.Equal(string.Empty, string.Join(", ", offenders),
-            "CorePin.Core must not contain a declared P/Invoke (S01 §2.2, boundary 2)");
+            "CorePin.Core must not contain a declared P/Invoke");
     }
 
     public static void Test_ModuleDependenciesMatch_2_5()
@@ -73,7 +72,7 @@ public static class ArchitectureTests
         }
 
         Assert.Equal(string.Empty, string.Join(" | ", violations.Distinct(StringComparer.Ordinal)),
-            "module dependencies must match the matrix of S01 §2.5");
+            "module dependencies must match the Allowed matrix");
     }
 
     /// Namespaces below CorePin.Core.<Module> belong to that module. A type directly in

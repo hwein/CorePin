@@ -1,13 +1,13 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Planungsdaten — bleiben lokal, das Repo geht öffentlich
+# Planning data — stays local, the repo is public
 # ─────────────────────────────────────────────────────────────────────────────
-# Konzept- und Spec-Dokumente sind interne Arbeitsunterlagen (deutsch) und
-# gehören nicht in ein öffentliches Repository. Sie liegen bewusst im
-# Arbeitsverzeichnis, damit die Werkzeugkette sie findet — aber nie im Git.
+# Concept and spec documents are internal working notes and do not belong in a
+# public repository. They live in the working directory on purpose so the
+# toolchain finds them — but never go into Git.
 concepts/
 specs/
 
-# Werkzeugkonfiguration der Arbeitsumgebung — lokal, nicht Teil des Projekts.
+# Tool configuration of the local working environment — not part of the project.
 .claude/
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ artifacts/
 *.sln.docstates
 *.rsuser
 
-# Build-Ergebnisse
+# Build output
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -41,8 +41,8 @@ publish/
 *.publishproj
 PublishScripts/
 
-# NuGet — das Projekt hat keine Abhängigkeiten (E1), die Einträge sind
-# Sicherheitsnetz, falls jemand versehentlich eines hinzufügt
+# NuGet — the project has no dependencies; these entries are a safety net
+# in case someone adds one by accident
 *.nupkg
 *.snupkg
 .nuget/
@@ -61,7 +61,7 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
 
-# Test- und Analyseergebnisse
+# Test and analysis results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 *.coverage
@@ -71,7 +71,7 @@ coverage*.xml
 BenchmarkDotNet.Artifacts/
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Betriebssystem und Werkzeuge
+# Operating system and tools
 # ─────────────────────────────────────────────────────────────────────────────
 Thumbs.db
 ehthumbs.db
@@ -81,9 +81,9 @@ $RECYCLE.BIN/
 .DS_Store
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CorePin-spezifisch
+# CorePin-specific
 # ─────────────────────────────────────────────────────────────────────────────
-# Laufzeitartefakte, die beim Testen im Arbeitsverzeichnis entstehen können
+# Runtime artifacts that testing can leave in the working directory
 config.json
 config.corrupt-*.json
 *.corepin.log

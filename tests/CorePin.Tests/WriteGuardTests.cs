@@ -2,7 +2,7 @@ using CorePin.Core.Configuration;
 
 namespace CorePin.Tests;
 
-/// S05 §7.0: the stricter guard wins field-wise, the reason follows the ranking
+/// The stricter guard wins field-wise, the reason follows the ranking
 /// ConfigTooNew, ConfigUnreadable, DebugTopology, None.
 public static class WriteGuardTests
 {
@@ -10,7 +10,7 @@ public static class WriteGuardTests
     {
         var combined = WriteGuard.Strictest(WriteGuard.Open, WriteGuard.NoPersist);
 
-        Assert.True(combined.CanEditRules, "NoPersist leaves editing allowed (criterion 3)");
+        Assert.True(combined.CanEditRules, "NoPersist leaves editing allowed");
         Assert.True(!combined.CanPersist, "NoPersist forbids persisting");
         Assert.Equal(GuardReason.DebugTopology, combined.Reason, "the only non-None reason wins");
     }

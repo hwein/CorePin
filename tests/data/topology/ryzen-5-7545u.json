@@ -1,10 +1,10 @@
-// CONSTRUCTED — and this dump tests an ASSUMPTION, not a measurement (02 §4.6, point 2).
+// CONSTRUCTED — and this dump tests an ASSUMPTION, not a measurement.
 // The assumption is that Windows reports Zen 4c cores with a lower EfficiencyClass than
-// the full Zen 4 cores. Three review rounds could neither verify it on own hardware nor
-// back it up with solid evidence (03, findings 42/72); the indications rather point the
-// other way. The value of this test is that the rule does the right thing IF the
-// assumption holds — and that the alternative (a single efficiency class, therefore one
-// cluster) also runs through cleanly. Both outcomes are mandatory tests, see S04 §10.2.
+// the full Zen 4 cores. Review could neither verify that on own hardware nor back it up
+// with solid evidence; the indications rather point the other way. The value of this
+// test is that the rule does the right thing IF the assumption holds — and that with the
+// alternative (a single efficiency class, therefore one cluster instead of two) pinning
+// still comes out correct. Both outcomes are covered by mandatory tests.
 {
   "capturedBy": "CorePin 0.1.0",
   "constructed": true,
