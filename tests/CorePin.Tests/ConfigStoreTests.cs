@@ -524,6 +524,18 @@ public static class ConfigStoreTests
             "Save never computes or compares the value itself");
     }
 
+    public static void Test_Save_WritesInfoNotInformationForLogLevel()
+    {
+        using var dir = new TempDir();
+        var store = NewStore(dir, new RecordingLog());
+
+        store.Save(SampleConfig());
+
+        string text = File.ReadAllText(Path.Combine(dir.Path, ConfigFile));
+        Assert.True(text.Contains("\"logLevel\": \"info\"", StringComparison.Ordinal),
+            "the written vocabulary is info, not information");
+    }
+
     /// LF, no BOM, two-space indent — measured, not assumed.
     public static void Test_Save_ProducesLfWithoutBomAndTwoSpaceIndent()
     {
@@ -546,7 +558,7 @@ public static class ConfigStoreTests
             + "    \"pollIntervalMs\": 1000,\n"
             + "    \"startWithWindows\": \"normal\",\n"
             + "    \"windowBounds\": null,\n"
-            + "    \"logLevel\": \"information\"\n"
+            + "    \"logLevel\": \"info\"\n"
             + "  },\n"
             + "  \"rules\": []\n"
             + "}\n",

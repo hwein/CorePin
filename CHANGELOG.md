@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Launching CorePin while it is already running brings the existing window to the front.
 - `--tray` starts CorePin hidden to the tray, without opening the window.
 - The tray icon follows the taskbar theme (light/dark variant).
+- Main window with the rule list, per-rule status, status line, and config notices.
+- Rules can be disabled (Space) and deleted (Del with inline confirmation, or the row's context menu).
+- Every change is saved automatically; window position and size survive a restart.
+- The window opens centered on the monitor with the mouse pointer on first start.
+- The tray tooltip shows the current rule counts.
+- A shield marker in the status line shows when CorePin runs elevated.
 
 ### Changed
 
@@ -32,3 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An unreadable config that cannot be renamed aside is reported as such instead of claiming a rename.
 - A stale `config.skipped.json` no longer survives a load that ends with an unreadable config.
 - A rule without an `exeName` is skipped with its own reason instead of `malformed entry`.
+- The very first start no longer logs a false "logicalProcessors changed" warning.

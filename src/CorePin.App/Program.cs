@@ -131,7 +131,8 @@ internal static class Program
 
         // 4b. The source is loaded.RawRules — loaded.Config.Rules is ALWAYS empty.
         var rules = loaded.RawRules;
-        if (loaded.Config.Machine.LogicalProcessors != topology.LogicalProcessorCount)
+        if (loaded.Outcome == ConfigLoadOutcome.Loaded
+            && loaded.Config.Machine.LogicalProcessors != topology.LogicalProcessorCount)
         {
             rules = rules.MarkAllForReview();
             log.Warning("config", string.Create(CultureInfo.InvariantCulture,

@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- net10.0-windows, not net10.0: a net10.0 project cannot reference the
-         net10.0-windows CorePin.Interop (NU1201). Only interop test cases free of native
-         calls are allowed; the recorded-buffer tests are exactly that. -->
+         net10.0-windows CorePin.Interop (NU1201). Interop test cases stay free of native calls
+         wherever a fixture can carry them, as the recorded-buffer tests do; MonitorHelper and
+         ElevationInfo are the exception, monitor geometry and the process token exist only at
+         runtime. -->
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>CorePin.Tests</AssemblyName>

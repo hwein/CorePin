@@ -25,8 +25,8 @@ public static class LogLevelNames
     {
         LogLevel.Trace => "trace",
         LogLevel.Debug => "debug",
-        LogLevel.Information => "information",
-        LogLevel.Warning => "warning",
+        LogLevel.Information => "info",
+        LogLevel.Warning => "warn",
         LogLevel.Error => "error",
         LogLevel.Critical => "critical",
         _ => throw new UnreachableException(),

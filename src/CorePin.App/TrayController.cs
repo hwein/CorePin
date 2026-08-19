@@ -16,6 +16,7 @@ internal sealed class TrayController : IDisposable
     private readonly Window _mainWindow;
     private readonly TopologySnapshot _topologySource;
     private readonly string _logDirectory;
+    private readonly ConfigPersister _configPersister;
     private readonly ILog _log;
 
     private byte[]? _lightIconBytes;
@@ -27,13 +28,14 @@ internal sealed class TrayController : IDisposable
 
     public TrayController(TrayIcon trayIcon, MessageWindow messageWindow, Window mainWindow,
                           TopologySnapshot topologySource, int ruleCount, string logDirectory,
-                          ILog log)
+                          ConfigPersister configPersister, ILog log)
     {
         _trayIcon = trayIcon;
         _messageWindow = messageWindow;
         _mainWindow = mainWindow;
         _topologySource = topologySource;
         _logDirectory = logDirectory;
+        _configPersister = configPersister;
         _log = log;
 
         trayIcon.LeftClicked += OnLeftClicked;
@@ -60,8 +62,11 @@ internal sealed class TrayController : IDisposable
 
     public void UpdateTooltip(int totalRules, int appliedRules)
     {
-        _lastTooltip = TrayTooltip.Format(totalRules, appliedRules);
-        _trayIcon.UpdateTooltip(_lastTooltip);
+        string tooltip = TrayTooltip.Format(totalRules, appliedRules);
+        if (tooltip == _lastTooltip) return;
+
+        _lastTooltip = tooltip;
+        _trayIcon.UpdateTooltip(tooltip);
     }
 
     public void ToggleMainWindow()
@@ -84,7 +89,11 @@ internal sealed class TrayController : IDisposable
     }
 
     /// The only place that hides the window; the close button routes here as well.
-    public void HideToTray() => _mainWindow.Hide();
+    public void HideToTray()
+    {
+        _configPersister.FlushNow();   // the geometry is already current, this only writes it
+        _mainWindow.Hide();
+    }
 
     public void Dispose()
     {

@@ -1,17 +1,261 @@
 <Window x:Class="CorePin.App.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:CorePin.Core.ViewModel;assembly=CorePin.Core"
         Title="CorePin"
         Width="660" Height="480"
+        MinWidth="560" MinHeight="420"
+        ResizeMode="CanResize"
+        WindowStyle="SingleBorderWindow"
+        WindowStartupLocation="Manual"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display"
-        Background="{DynamicResource CorePin.Brush.WindowBackground}">
-  <!-- Gate G0: empty window. The single line shows that the font tokens apply. No Foreground:
-       under path A stock controls keep Fluent's own text colour, CorePin.Brush.Text* is for
-       self-drawn surfaces only. -->
-  <TextBlock Margin="{StaticResource CorePin.Thickness.16}"
-             VerticalAlignment="Top"
-             FontFamily="{StaticResource CorePin.Font.UI}"
-             FontSize="{StaticResource CorePin.FontSize.UI}"
-             Text="CorePin"/>
+        FontFamily="{StaticResource CorePin.Font.UI}"
+        FontSize="{StaticResource CorePin.FontSize.UI}"
+        Background="{DynamicResource CorePin.Brush.WindowBackground}"
+        Foreground="{DynamicResource CorePin.Brush.TextPrimary}">
+
+  <Window.Resources>
+
+    <!-- One banner per line, never more than one line each. -->
+    <DataTemplate x:Key="CorePin.Template.Banner">
+      <Border Height="28" Padding="8,0"
+              Background="{DynamicResource CorePin.Brush.CardBackground}"
+              BorderBrush="{DynamicResource CorePin.Brush.Border}"
+              BorderThickness="0,0,0,1">
+        <TextBlock Text="{Binding}" ToolTip="{Binding}"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      </Border>
+    </DataTemplate>
+
+    <Style x:Key="CorePin.Style.BannerArea" TargetType="ItemsControl">
+      <Style.Triggers>
+        <!-- Same 120 ms fade as a rule row; the Collapse itself still cuts a fade-out short. -->
+        <DataTrigger Binding="{Binding Banners.Count}" Value="0">
+          <Setter Property="Visibility" Value="Collapsed"/>
+          <DataTrigger.EnterActions>
+            <BeginStoryboard>
+              <Storyboard>
+                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+              </Storyboard>
+            </BeginStoryboard>
+          </DataTrigger.EnterActions>
+          <DataTrigger.ExitActions>
+            <BeginStoryboard>
+              <Storyboard>
+                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
+              </Storyboard>
+            </BeginStoryboard>
+          </DataTrigger.ExitActions>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="CorePin.Style.RuleRowItem" TargetType="ListBoxItem">
+      <Setter Property="Height" Value="{StaticResource CorePin.Height.RuleRow}"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+    </Style>
+
+    <DataTemplate x:Key="CorePin.Template.RuleRow">
+      <Border x:Name="RowRoot" Background="Transparent"
+              ToolTip="{Binding Tooltip}"
+              Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}">
+        <Border.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="Delete rule" Click="DeleteRule_Click"
+                      IsEnabled="{Binding PlacementTarget.Tag.IsEditable,
+                                          RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+          </ContextMenu>
+        </Border.ContextMenu>
+
+        <!-- Loaded/Unloaded track this element; the fade animates StatusDot and SecondLineText below. -->
+        <Grid Margin="8,0" VerticalAlignment="Center"
+              Loaded="RuleRow_Loaded" Unloaded="RuleRow_Unloaded">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="StatusDot" Text="{Binding Symbol}" VerticalAlignment="Center"
+                       FontFamily="Segoe UI Symbol"
+                       Foreground="{StaticResource CorePin.Brush.StatusIdle}"/>
+            <Image Grid.Column="1" Width="20" Height="20" Stretch="Uniform" Margin="4,0,0,0"
+                   Source="{StaticResource CorePin.Icon.Placeholder}"/>
+            <TextBlock Grid.Column="2" Text="{Binding DisplayName}" VerticalAlignment="Center"
+                       Margin="4,0,0,0"/>
+          </Grid>
+
+          <!-- Full row width, deliberately not indented under the file name. -->
+          <TextBlock x:Name="SecondLineText" Grid.Row="1" Text="{Binding SecondLine}"
+                     Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
+        </Grid>
+      </Border>
+
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding State}" Value="Applied">
+          <Setter TargetName="StatusDot" Property="Foreground"
+                  Value="{StaticResource CorePin.Brush.StatusApplied}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding State}" Value="Blocked">
+          <Setter TargetName="StatusDot" Property="Foreground"
+                  Value="{StaticResource CorePin.Brush.StatusBlocked}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding State}" Value="Invalid">
+          <Setter TargetName="StatusDot" Property="Foreground"
+                  Value="{StaticResource CorePin.Brush.StatusBlocked}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsDimmed}" Value="True">
+          <Setter TargetName="RowRoot" Property="Opacity" Value="0.55"/>
+        </DataTrigger>
+        <DataTrigger Value="False"
+                     Binding="{Binding DataContext.IsEditable,
+                                       RelativeSource={RelativeSource AncestorType=ListBox}}">
+          <Setter TargetName="RowRoot" Property="ToolTip"
+                  Value="{Binding DataContext.LockedTooltip,
+                                  RelativeSource={RelativeSource AncestorType=ListBox}}"/>
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <Style x:Key="CorePin.Style.RuleList" TargetType="ListBox">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding HasRules}" Value="False">
+          <Setter Property="Visibility" Value="Collapsed"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="CorePin.Style.EmptyList" TargetType="TextBlock">
+      <Setter Property="Visibility" Value="Collapsed"/>
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding HasRules}" Value="False">
+          <Setter Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="CorePin.Style.AddButton" TargetType="Button">
+      <Setter Property="MinWidth" Value="{StaticResource CorePin.HitTarget.MinWidth}"/>
+      <Setter Property="MinHeight" Value="{StaticResource CorePin.HitTarget.MinHeight}"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+      <Setter Property="IsEnabled" Value="{Binding IsEditable}"/>
+      <Setter Property="ToolTip" Value="{Binding LockedTooltip}"/>
+      <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+    </Style>
+
+    <!-- Only a debug build can ever reach a non-null hint. -->
+    <Style x:Key="CorePin.Style.DebugHint" TargetType="TextBlock">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding DebugTopologyHint}" Value="{x:Null}">
+          <Setter Property="Visibility" Value="Collapsed"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="CorePin.Style.Shield" TargetType="TextBlock">
+      <Setter Property="Visibility" Value="Collapsed"/>
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsElevated}" Value="True">
+          <Setter Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+  </Window.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Full window width: both reasons for a banner concern the whole window. -->
+    <ItemsControl Grid.Row="0" ItemsSource="{Binding Banners}"
+                  Style="{StaticResource CorePin.Style.BannerArea}"
+                  ItemTemplate="{StaticResource CorePin.Template.Banner}"/>
+
+    <Grid Grid.Row="1" Margin="{StaticResource CorePin.Thickness.8}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="220"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <Grid Grid.Column="0">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="RULES" Margin="0,0,0,8"
+                   FontFamily="{StaticResource CorePin.Font.Heading}"
+                   FontSize="{StaticResource CorePin.FontSize.Heading}"
+                   FontWeight="{StaticResource CorePin.FontWeight.Heading}"
+                   Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
+
+        <ListBox Grid.Row="1" ItemsSource="{Binding Rows}"
+                 Style="{StaticResource CorePin.Style.RuleList}"
+                 ItemTemplate="{StaticResource CorePin.Template.RuleRow}"
+                 ItemContainerStyle="{StaticResource CorePin.Style.RuleRowItem}"
+                 SelectedValuePath="RuleId"
+                 SelectedValue="{Binding SelectedRuleId, Mode=TwoWay}"
+                 HorizontalContentAlignment="Stretch"
+                 Background="Transparent" BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 PreviewKeyDown="RuleList_PreviewKeyDown"/>
+
+        <TextBlock Grid.Row="1" Text="{x:Static vm:RuleListViewModel.EmptyListText}"
+                   Style="{StaticResource CorePin.Style.EmptyList}"
+                   TextWrapping="Wrap" VerticalAlignment="Top"
+                   Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
+
+        <StackPanel Grid.Row="2" Margin="0,8,0,0">
+          <Button Content="+ Add app" Style="{StaticResource CorePin.Style.AddButton}"/>
+          <Button Content="+ From running…" Margin="0,4,0,0"
+                  Style="{StaticResource CorePin.Style.AddButton}"/>
+        </StackPanel>
+      </Grid>
+
+      <!-- Slot for the CPU map; empty on purpose in this state. -->
+      <Border Grid.Column="1" Margin="8,0,0,0"
+              Background="{DynamicResource CorePin.Brush.CardBackground}"
+              CornerRadius="{StaticResource CorePin.Radius.Card}"/>
+    </Grid>
+
+    <Grid Grid.Row="2">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="1"/>
+        <RowDefinition Height="28"/>
+      </Grid.RowDefinitions>
+
+      <Border Background="{DynamicResource CorePin.Brush.Border}"/>
+
+      <Grid Grid.Row="1" Margin="8,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center"
+                   HorizontalAlignment="Left" TextTrimming="CharacterEllipsis"/>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <TextBlock Text="{Binding DebugTopologyHint}" Margin="0,0,8,0"
+                     Style="{StaticResource CorePin.Style.DebugHint}"
+                     Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
+          <TextBlock Style="{StaticResource CorePin.Style.Shield}">
+            <Run Text="⛨" FontFamily="Segoe UI Symbol"/><Run Text=" admin"/>
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Grid>
 </Window>

@@ -56,4 +56,9 @@
   <SolidColorBrush x:Key="CorePin.Brush.StatusBlocked" Color="{StaticResource CorePin.Color.StatusBlocked}"/>
   <SolidColorBrush x:Key="CorePin.Brush.StatusIdle" Color="{StaticResource CorePin.Color.StatusIdle}"/>
 
+  <!-- Outline of the placeholder icon — its own token, NOT StatusIdle: a grey dot and a grey
+       icon side by side in the same row would mean two different things in one colour. -->
+  <Color x:Key="CorePin.Color.PlaceholderIcon">#808080</Color>
+  <SolidColorBrush x:Key="CorePin.Brush.PlaceholderIcon" Color="{StaticResource CorePin.Color.PlaceholderIcon}"/>
+
 </ResourceDictionary>

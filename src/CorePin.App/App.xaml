@@ -9,6 +9,8 @@
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="Themes/Tokens.xaml"/>
+        <!-- After Tokens.xaml: the drawing pulls its brush from there. -->
+        <ResourceDictionary Source="Themes/PlaceholderIcon.xaml"/>
         <!-- Gate G0 picked path A and needed no brush overrides, so Themes/Overrides.xaml
              does not exist and is not merged; it is created once a concrete need shows up. -->
         <!-- No third static entry here — ThemeController.Initialize merges the theme slot

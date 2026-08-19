@@ -18,6 +18,7 @@ public static class ArchitectureTests
         ["Platform"] = ["Primitives", "Topology"],
         ["Configuration"] = ["Primitives", "Time", "Rules", "Diagnostics"],
         ["Engine"] = ["Primitives", "Time", "Rules", "Platform", "Diagnostics"],
+        ["ViewModel"] = ["Primitives", "Rules", "Configuration", "Engine", "Diagnostics"],
     };
 
     private const string CoreNamespace = "CorePin.Core";

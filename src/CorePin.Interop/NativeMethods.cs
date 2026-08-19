@@ -198,6 +198,28 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     internal static partial uint GetDpiForWindow(nint hwnd);
 
+    [LibraryImport("user32.dll")]
+    internal static partial uint GetDpiForSystem();
+
+    [LibraryImport("user32.dll")]
+    internal static partial nint MonitorFromRect(in RECT lprc, uint dwFlags);
+
+    [LibraryImport("user32.dll")]
+    internal static partial nint MonitorFromPoint(POINT pt, uint dwFlags);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetMonitorInfoW", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetMonitorInfo(nint hMonitor, ref MONITORINFO lpmi);
+
+    /// Returns an HRESULT, not a BOOL.
+    [LibraryImport("shcore.dll")]
+    internal static partial int GetDpiForMonitor(nint hmonitor, uint dpiType, out uint dpiX, out uint dpiY);
+
+    internal const uint MONITOR_DEFAULTTONULL = 0x00000000;
+    internal const uint MONITOR_DEFAULTTOPRIMARY = 0x00000001;
+    internal const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    internal const uint MDT_EFFECTIVE_DPI = 0;
+
     [LibraryImport("user32.dll", SetLastError = true)]
     internal static partial int GetSystemMetricsForDpi(int nIndex, uint dpi);
 
@@ -233,6 +255,24 @@ internal struct POINT
 {
     public int X;
     public int Y;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct RECT
+{
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct MONITORINFO
+{
+    public uint CbSize;
+    public RECT RcMonitor;
+    public RECT RcWork;
+    public uint DwFlags;
 }
 
 [StructLayout(LayoutKind.Sequential)]

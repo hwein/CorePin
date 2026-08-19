@@ -1,0 +1,38 @@
+<!-- Shown wherever a rule has no extracted exe icon: never an empty box, never a question mark.
+     A DrawingImage, not a Viewbox — a Freezable can hang in many rows at once and fits the same
+     Image.Source slot the real icons use. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <DrawingImage x:Key="CorePin.Icon.Placeholder">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <!-- Eight outlined cells, one pen for all of them; stroke compensated positions. -->
+        <GeometryDrawing>
+          <GeometryDrawing.Pen>
+            <Pen Brush="{StaticResource CorePin.Brush.PlaceholderIcon}" Thickness="1"/>
+          </GeometryDrawing.Pen>
+          <GeometryDrawing.Geometry>
+            <GeometryGroup>
+              <RectangleGeometry Rect="0.5,0.5,3,3"   RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="6.5,0.5,3,3"   RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="0.5,6.5,3,3"   RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="6.5,6.5,3,3"   RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="12.5,6.5,3,3"  RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="0.5,12.5,3,3"  RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="6.5,12.5,3,3"  RadiusX="0.5" RadiusY="0.5"/>
+              <RectangleGeometry Rect="12.5,12.5,3,3" RadiusX="0.5" RadiusY="0.5"/>
+            </GeometryGroup>
+          </GeometryDrawing.Geometry>
+        </GeometryDrawing>
+        <!-- The filled cell top right takes its nominal size directly, it has no pen. -->
+        <GeometryDrawing Brush="{StaticResource CorePin.Brush.PlaceholderIcon}">
+          <GeometryDrawing.Geometry>
+            <RectangleGeometry Rect="12,0,4,4" RadiusX="1" RadiusY="1"/>
+          </GeometryDrawing.Geometry>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+</ResourceDictionary>
