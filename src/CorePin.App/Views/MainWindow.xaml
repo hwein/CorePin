@@ -52,11 +52,36 @@
       </Style.Triggers>
     </Style>
 
+    <!-- Own template: an explicit item style suppresses the implicit theme style, and the
+         classic fallback paints grey selection with black text in both themes. -->
     <Style x:Key="CorePin.Style.RuleRowItem" TargetType="ListBoxItem">
       <Setter Property="Height" Value="{StaticResource CorePin.Height.RuleRow}"/>
       <Setter Property="Padding" Value="0"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
       <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource CorePin.Brush.TextPrimary}"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ListBoxItem">
+            <Border x:Name="ItemChrome" Background="Transparent"
+                    BorderThickness="1" BorderBrush="Transparent"
+                    CornerRadius="{StaticResource CorePin.Radius.Button}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="ItemChrome" Property="Background"
+                        Value="{DynamicResource CorePin.Brush.CardBackground}"/>
+                <Setter TargetName="ItemChrome" Property="BorderBrush"
+                        Value="{DynamicResource CorePin.Brush.Border}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
 
     <DataTemplate x:Key="CorePin.Template.RuleRow">

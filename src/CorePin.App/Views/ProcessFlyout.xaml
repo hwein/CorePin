@@ -8,10 +8,13 @@
        the 1 px border below is the flyout's only edge. -->
   <Popup x:Name="FlyoutPopup" StaysOpen="False" Placement="Bottom" AllowsTransparency="True"
          Closed="FlyoutPopup_Closed">
-    <Border Width="280"
+    <!-- Explicit background/foreground: the popup's own HWND does not reliably inherit
+         the window theme, so nothing here may rely on inherited colours. -->
+    <Border x:Name="FlyoutRoot" Width="280"
             Background="{DynamicResource CorePin.Brush.CardBackground}"
             BorderBrush="{DynamicResource CorePin.Brush.Border}"
             BorderThickness="1"
+            TextElement.Foreground="{DynamicResource CorePin.Brush.TextPrimary}"
             KeyboardNavigation.TabNavigation="Cycle"
             KeyboardNavigation.ControlTabNavigation="None"
             PreviewKeyDown="FlyoutRoot_PreviewKeyDown">
@@ -27,6 +30,10 @@
         <TextBox x:Name="SearchBox" Margin="{StaticResource CorePin.Thickness.4}"
                  MinHeight="{StaticResource CorePin.HitTarget.MinHeight}"
                  VerticalContentAlignment="Center"
+                 Background="{DynamicResource CorePin.Brush.WindowBackground}"
+                 Foreground="{DynamicResource CorePin.Brush.TextPrimary}"
+                 BorderBrush="{DynamicResource CorePin.Brush.Border}"
+                 CaretBrush="{DynamicResource CorePin.Brush.TextPrimary}"
                  Loaded="SearchBox_Loaded" TextChanged="SearchBox_TextChanged"/>
 
         <Border Grid.Row="1" Background="{DynamicResource CorePin.Brush.Border}"/>
@@ -38,11 +45,32 @@
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto">
           <ListBox.ItemContainerStyle>
+            <!-- Same reason as the rule list: without an own template the classic chrome
+                 paints grey-on-grey selection regardless of theme. -->
             <Style TargetType="ListBoxItem">
               <Setter Property="Height" Value="32"/>
               <Setter Property="Padding" Value="0"/>
               <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
               <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+              <Setter Property="TextElement.Foreground" Value="{DynamicResource CorePin.Brush.TextPrimary}"/>
+              <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="ItemChrome" Background="Transparent"
+                            Padding="{TemplateBinding Padding}">
+                      <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsSelected" Value="True">
+                        <Setter TargetName="ItemChrome" Property="Background"
+                                Value="{DynamicResource CorePin.Brush.WindowBackground}"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
               <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Row_PreviewMouseLeftButtonDown"/>
             </Style>
           </ListBox.ItemContainerStyle>

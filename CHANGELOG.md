@@ -51,3 +51,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A stale `config.skipped.json` no longer survives a load that ends with an unreadable config.
 - A rule without an `exeName` is skipped with its own reason instead of `malformed entry`.
 - The very first start no longer logs a false "logicalProcessors changed" warning.
+- Rule list and picker rows use theme colors for titles and selection instead of the classic grey chrome.
