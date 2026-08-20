@@ -122,9 +122,8 @@ public sealed class EngineHost : IDisposable
                 {
                     RunTick();
                     nextTick = now + _pollIntervalMs;
+                    failures = 0;   // only a completed tick walks the whole path and proves recovery
                 }
-
-                failures = 0;
             }
             catch (Exception ex)
             {
@@ -135,7 +134,10 @@ public sealed class EngineHost : IDisposable
 
                 _gaveUp = true;
                 _log.Critical("engine", $"watcher gave up after {failures} consecutive failures, monitoring stopped");
-                Faulted?.Invoke(new EngineFault(ex.Message, failures));
+
+                // Outside the guarded pass: a throwing subscriber would tear down the process while giving up.
+                try { Faulted?.Invoke(new EngineFault(ex.Message, failures)); }
+                catch (Exception subscriberEx) { _log.Warning("engine", $"Faulted subscriber threw: {subscriberEx}"); }
                 return;
             }
         }
@@ -193,11 +195,10 @@ public sealed class EngineHost : IDisposable
 
         if (due is null) return;
 
-        foreach (var ruleId in due)
-        {
-            _dueAt.Remove(ruleId);
-            Publish(_engine.ApplyRule(_rules, ruleId));
-        }
+        // All deadlines go first: a throw must not leave the rest due and retry without any wait.
+        foreach (var ruleId in due) _dueAt.Remove(ruleId);
+
+        foreach (var ruleId in due) Publish(_engine.ApplyRule(_rules, ruleId));
     }
 
     private void RunTick()

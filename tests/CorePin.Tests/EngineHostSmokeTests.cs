@@ -80,7 +80,7 @@ public static class EngineHostSmokeTests
             "the application no longer does what it exists for, so the last line is critical");
     }
 
-    public static void Test_ASuccessfulPassResetsTheFailureCounter()
+    public static void Test_ACompletedTickResetsTheFailureCounter()
     {
         using var f = new HostFixture();
         f.Inventory.ThrowOnNextList(new InvalidOperationException("inventory unavailable"));
@@ -97,14 +97,110 @@ public static class EngineHostSmokeTests
         {
             f.Clock.Advance(PollIntervalMs);
             f.Host.Submit(DisabledRule, new RuleChange(RuleChangeKind.None, Guid.Empty));
-        }, "the recovered port lets one pass complete");
+        }, "the recovered port lets one tick complete");
 
         f.Inventory.ThrowOnNextList(new InvalidOperationException("inventory unavailable again"));
         DriveFailures(f, MaxFailures, 2 * (MaxFailures - 1));
 
-        Assert.Equal(0, raised, "nine failures, one good pass and nine more are never ten in a row");
-        Assert.Equal(2, f.Log.Count("pass failed (1)"), "the counter started over at the good pass");
+        Assert.Equal(0, raised, "nine failures, one good tick and nine more are never ten in a row");
+        Assert.Equal(2, f.Log.Count("pass failed (1)"), "the counter started over at the good tick");
         Assert.True(!f.Log.Has(LogLevel.Critical, "watcher gave up"), "so the watcher never gave up");
+    }
+
+    public static void Test_ACommandBetweenFailedTicksDoesNotResetTheFailureCounter()
+    {
+        using var f = new HostFixture();
+        f.Inventory.Add(100, "a.exe", Start);
+        var rules = Set(Rule(IdA, "a.exe", FirstHalf), Marker());
+
+        using var faulted = new ManualResetEventSlim();
+        int reported = 0;
+        f.Host.Faulted += fault =>
+        {
+            reported = fault.ConsecutiveFailures;
+            faulted.Set();
+        };
+
+        // The first tick fills the snapshot, so a later command reaches no port that could fail.
+        AwaitHeartbeat(f, f.Host.Start, "the first tick runs immediately");
+        f.Inventory.ThrowOnNextList(new InvalidOperationException("inventory unavailable"));
+        DriveTickFailures(f, rules, 1, 5);
+
+        f.Host.Submit(rules, new RuleChange(RuleChangeKind.None, Guid.Empty));
+        AwaitQueueDrained(f, rules);
+
+        DriveTickFailures(f, rules, 6, MaxFailures);
+
+        Assert.True(faulted.Wait(WaitMs), "the failing ticks stay a series across the commands in between");
+        Assert.Equal(MaxFailures, reported, "so the tenth of them makes the loop give up");
+    }
+
+    public static void Test_ADueDeadlineThatThrowsDropsTheOtherDeadlinesOfItsPass()
+    {
+        using var f = new HostFixture();
+        var rules = Set(Rule(IdA, "a.exe", FirstHalf), Rule(IdB, "b.exe", SecondHalf), Marker());
+
+        // No process runs, so every application enumerates again and the staged fault reaches it.
+        AwaitHeartbeat(f, f.Host.Start, "the first tick runs immediately");
+        f.Host.Submit(rules, new RuleChange(RuleChangeKind.SelectionChanged, IdA));
+        f.Host.Submit(rules, new RuleChange(RuleChangeKind.SelectionChanged, IdB));
+        AwaitQueueDrained(f, rules);
+
+        f.Inventory.ThrowOnNextList(new InvalidOperationException("inventory unavailable"));
+        f.Clock.Advance(250);
+        AwaitFailures(f, 1);
+
+        f.Inventory.ThrowOnNextList(null);
+        AwaitHeartbeat(f, () => f.Clock.Advance(PollIntervalMs), "the next tick runs a poll interval later");
+
+        Assert.Equal(1, f.Log.Count("pass failed"),
+            "both deadlines were due together, so the throw of the first cost exactly one pass");
+    }
+
+    public static void Test_TheNextTickAppliesWhatAThrowingPassDropped()
+    {
+        using var f = new HostFixture();
+        var rules = Set(Rule(IdA, "a.exe", FirstHalf), Rule(IdB, "b.exe", SecondHalf), Marker());
+
+        // No process runs yet, so the deadline pass enumerates again and the staged fault reaches it.
+        AwaitHeartbeat(f, f.Host.Start, "the first tick runs immediately");
+        f.Host.Submit(rules, new RuleChange(RuleChangeKind.SelectionChanged, IdA));
+        f.Host.Submit(rules, new RuleChange(RuleChangeKind.SelectionChanged, IdB));
+        AwaitQueueDrained(f, rules);
+
+        f.Inventory.ThrowOnNextList(new InvalidOperationException("inventory unavailable"));
+        f.Clock.Advance(250);
+        AwaitFailures(f, 1);
+
+        f.Inventory.ThrowOnNextList(null);
+        f.Inventory.Add(100, "a.exe", Start);
+        f.Inventory.Add(101, "b.exe", Start);
+        AwaitHeartbeat(f, () =>
+        {
+            f.Clock.Advance(PollIntervalMs);
+            f.Host.Submit(rules, new RuleChange(RuleChangeKind.None, Guid.Empty));
+        }, "the next tick runs a poll interval later");
+
+        Assert.Equal(FirstHalf, f.Access.CurrentMask(100), "the tick applied the rule whose deadline threw");
+        Assert.Equal(SecondHalf, f.Access.CurrentMask(101), "and the rule the throw dropped");
+    }
+
+    public static void Test_AThrowingFaultedSubscriberIsLoggedInsteadOfKillingTheWorker()
+    {
+        using var f = new HostFixture();
+        f.Inventory.ThrowOnNextList(new InvalidOperationException("inventory unavailable"));
+
+        int raised = 0;
+        f.Host.Faulted += _ => { raised++; throw new InvalidOperationException("subscriber is broken"); };
+
+        f.Host.Start();
+        AwaitFailures(f, 1);
+        DriveFailures(f, 2, MaxFailures);
+
+        AwaitLog(f, "Faulted subscriber threw", 1, "the loop survives the subscriber and writes what it threw");
+        Assert.Equal(1, raised, "the subscriber still ran exactly once");
+        Assert.True(f.Log.Has(LogLevel.Warning, "Faulted subscriber threw: System.InvalidOperationException: subscriber is broken"),
+            "the line names the exception, because nobody else sees it");
     }
 
     public static void Test_NoStoppedLineAfterTheWatcherGaveUp()
@@ -195,12 +291,26 @@ public static class EngineHostSmokeTests
         }
     }
 
+    /// Advance makes the next tick due; the None command wakes the worker at once without touching a port.
+    private static void DriveTickFailures(HostFixture f, RuleSet rules, int from, int to)
+    {
+        for (int n = from; n <= to; n++)
+        {
+            f.Clock.Advance(PollIntervalMs);
+            f.Host.Submit(rules, new RuleChange(RuleChangeKind.None, Guid.Empty));
+            AwaitFailures(f, n);
+        }
+    }
+
     private static void AwaitFailures(HostFixture f, int count)
+        => AwaitLog(f, "pass failed", count, $"the loop reports {count} failed passes");
+
+    private static void AwaitLog(HostFixture f, string fragment, int count, string because)
     {
         long deadline = Environment.TickCount64 + WaitMs;
-        while (f.Log.Count("pass failed") < count)
+        while (f.Log.Count(fragment) < count)
         {
-            Assert.True(Environment.TickCount64 < deadline, $"the loop reports {count} failed passes");
+            Assert.True(Environment.TickCount64 < deadline, because);
             Thread.Sleep(1);
         }
     }

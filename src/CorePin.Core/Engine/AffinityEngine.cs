@@ -19,6 +19,7 @@ public sealed class AffinityEngine
     private readonly ReleaseFailures _releaseFailed = new();
     private readonly RuleTransitionLog _transitions;
     private readonly Dictionary<string, Rule> _byExe = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<Guid> _liveRuleIds = [];
 
     private IReadOnlyList<ProcessEntry> _lastSnapshot = [];
     private long _tickNumber;
@@ -123,11 +124,11 @@ public sealed class AffinityEngine
 
     private void DropVanishedRules(RuleSet rules)
     {
-        var live = new HashSet<Guid>(rules.Rules.Count);
-        foreach (var rule in rules.Rules) live.Add(rule.Id);
+        _liveRuleIds.Clear();
+        foreach (var rule in rules.Rules) _liveRuleIds.Add(rule.Id);
 
-        _transitions.RetainOnly(live);
-        _releaseFailed.RetainOnly(live);
+        _transitions.RetainOnly(_liveRuleIds);
+        _releaseFailed.RetainOnly(_liveRuleIds);
     }
 
     /// Every rule gets an entry — an empty list on no hit — and every list ascends by PID.
