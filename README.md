@@ -63,7 +63,10 @@ rather than bugs:
 Some programs cannot be pinned at all. Anything running elevated needs CorePin to run
 elevated too, and Store or Game Pass titles often live in a job object that forbids the
 change. In both cases CorePin says so, on the rule, with the reason — it never pretends
-to have succeeded.
+to have succeeded. A release can fail the same way: if Windows refuses to restore the
+original mask when a rule stops applying — disabled, deleted, or set back to all cores —
+the process keeps its pinned cores until it exits. A rule that still exists shows
+*Blocked by Windows*; after a delete, only the log records the failure.
 
 ## Status
 
