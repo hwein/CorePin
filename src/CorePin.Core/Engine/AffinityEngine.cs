@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Platform;
 using CorePin.Core.Primitives;
@@ -10,7 +12,6 @@ namespace CorePin.Core.Engine;
 public sealed class AffinityEngine
 {
     private readonly IProcessInventory _inventory;
-    private readonly IClock _clock;
     private readonly ILog _log;
 
     private readonly PinList _pins = new();
@@ -33,7 +34,6 @@ public sealed class AffinityEngine
         ArgumentNullException.ThrowIfNull(log);
 
         _inventory = inventory;
-        _clock = clock;
         _log = log;
         MachineMask = machineMask;
         _pinner = new ProcessPinner(access, log, _pins);
@@ -50,7 +50,7 @@ public sealed class AffinityEngine
     {
         ArgumentNullException.ThrowIfNull(rules);
 
-        long startedMs = _clock.MonotonicMs;
+        long started = Stopwatch.GetTimestamp();
         _tickNumber++;
 
         DropVanishedRules(rules);
@@ -70,9 +70,12 @@ public sealed class AffinityEngine
             _transitions.Observe(rules.Rules[i].ExeName, statuses[i]);
 
         if (_log.IsEnabled(LogLevel.Debug))
+        {
+            string elapsed = Stopwatch.GetElapsedTime(started).TotalMilliseconds
+                .ToString("0.00", CultureInfo.InvariantCulture);
             _log.Debug("engine", $"tick #{_tickNumber}: {rules.Rules.Count} rules checked, " +
-                                 $"{TotalMatches(matches)} processes matched, " +
-                                 $"{_clock.MonotonicMs - startedMs} ms");
+                                 $"{TotalMatches(matches)} processes matched, {elapsed} ms");
+        }
 
         return statuses;
     }

@@ -535,6 +535,27 @@ public static class EngineTests
         Assert.Equal(RuleState.Idle, f.Engine.ApplyRule(rules, IdB)[0].State, "the same holds for ApplyRule");
     }
 
+    public static void Test_TickDuration_IsLoggedWithTwoDecimalPlaces()
+    {
+        var f = new Fixture();
+        f.Inventory.Add(100, "a.exe", Start);
+
+        f.Engine.Tick(Set(Rule(IdA, "a.exe", FirstHalf)));
+
+        string line = f.Log.Lines.Single(l => l.Contains("tick #1:", StringComparison.Ordinal));
+        Assert.True(line.EndsWith(" ms", StringComparison.Ordinal), "the tick line ends in the ms suffix");
+
+        string beforeSuffix = line[..^" ms".Length];
+        string duration = beforeSuffix[(beforeSuffix.LastIndexOf(' ') + 1)..];
+        int dot = duration.IndexOf('.', StringComparison.Ordinal);
+
+        Assert.True(dot > 0, "the duration carries a decimal point");
+        Assert.True(duration[..dot].Length > 0 && duration[..dot].All(char.IsAsciiDigit),
+            "the integer part is numeric");
+        Assert.Equal(2, duration.Length - dot - 1, "exactly two digits follow the decimal point");
+        Assert.True(duration[(dot + 1)..].All(char.IsAsciiDigit), "the decimal digits are numeric");
+    }
+
     private static void AssertReleaseFailure(Action<Fixture> arm, int win32Error, string name)
     {
         var f = new Fixture();
