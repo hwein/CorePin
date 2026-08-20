@@ -82,8 +82,11 @@ public static class RuleListTextTests
     {
         Assert.Equal("Watching for apps — no rules yet", StatusLine.Compose(0, null, null), "no rules");
         Assert.Equal("Watching 3 rules", StatusLine.Compose(3, null, null), "rules, none applied");
+        Assert.Equal("Watching 1 rule", StatusLine.Compose(1, null, null), "singular rule, none applied");
         Assert.Equal("Watching 3 rules · applied handbrake.exe 3 s ago",
             StatusLine.Compose(3, "handbrake.exe", TimeSpan.FromSeconds(3)), "at least one applied");
+        Assert.Equal("Watching 1 rule · applied handbrake.exe 3 s ago",
+            StatusLine.Compose(1, "handbrake.exe", TimeSpan.FromSeconds(3)), "singular rule, applied");
         Assert.Equal("Stopped watching — quit from the tray icon and start CorePin again",
             StatusLine.Stopped, "the fourth form after a fault");
     }

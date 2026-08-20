@@ -15,9 +15,11 @@ public static class StatusLine
     public static string Compose(int ruleCount, string? appliedExe, TimeSpan? sinceApplied)
     {
         if (ruleCount == 0) return NoRules;
-        if (appliedExe is null || sinceApplied is not { } elapsed) return $"Watching {ruleCount} rules";
 
-        return $"Watching {ruleCount} rules · applied {appliedExe} {Ago(elapsed)}";
+        string noun = ruleCount == 1 ? "rule" : "rules";
+        if (appliedExe is null || sinceApplied is not { } elapsed) return $"Watching {ruleCount} {noun}";
+
+        return $"Watching {ruleCount} {noun} · applied {appliedExe} {Ago(elapsed)}";
     }
 
     /// Seconds, then minutes, then hours — nothing finer, or the line would reformat every second.
