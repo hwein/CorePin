@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using CorePin.App.Themes;
 using CorePin.Core.Configuration;
@@ -77,6 +78,12 @@ public partial class App : Application
         // 5c. Construct the window, do not show it.
         var window = new Views.MainWindow(Theme);
         MainWindow = window;
+        window.SourceInitialized += (_, _) => DisableMaximize(window);
+        // A restore can set Maximized without asking the style bit, so it snaps back here.
+        window.StateChanged += (_, _) =>
+        {
+            if (window.WindowState == WindowState.Maximized) window.WindowState = WindowState.Normal;
+        };
 
         //     The engine only exists from step 6 on, so its submit goes through the field.
         _viewModel = new RuleListViewModel(
@@ -86,6 +93,9 @@ public partial class App : Application
             ElevationInfo.IsElevated, (rules, change) => _engineHost.Submit(rules, change),
             _persister.RequestSave, mask => SelectionDescription.Describe(_topology, mask), _log);
         window.DataContext = _viewModel;
+
+        //     A blocked guard makes the store discard every write, so it must not signal one.
+        if (_guard.CanPersist) _persister.Saved += () => _viewModel.NotifySaved();
 
         //     The card view carries the rule id; the view model owns every rule change.
         window.CpuMap.Initialize(_topology, Theme, text => TopologyActions.TryCopyText(text, _log));
@@ -147,7 +157,7 @@ public partial class App : Application
         if (!_options.Tray) window.Show();
     }
 
-    /// A stored position on no attached monitor is dropped: it would open in nowhere.
+    /// Without a stored position on an attached monitor the window opens over the tray.
     private void PlaceWindow(Window window)
     {
         try
@@ -162,15 +172,23 @@ public partial class App : Application
                 return;
             }
 
-            var area = MonitorHelper.WorkAreaAtCursor();
-            window.Left = area.X + ((area.Width - window.Width) / 2);
-            window.Top = area.Y + ((area.Height - window.Height) / 2);
+            // The primary monitor's work area: its bottom right corner is where the tray sits.
+            var area = SystemParameters.WorkArea;
+            window.Left = area.Right - window.Width - Tokens.Spacing8;
+            window.Top = area.Bottom - window.Height - Tokens.Spacing8;
         }
         catch (Exception ex)
         {
             // Best-effort placement: the window stays at its WPF default position instead of aborting startup.
             _log.Warning("app", $"window placement failed ({ex.GetType().Name}), using default position");
         }
+    }
+
+    private void DisableMaximize(Window window)
+    {
+        if (WindowStyling.DisableMaximize(new WindowInteropHelper(window).Handle)) return;
+
+        _log.Warning("app", "WS_MAXIMIZEBOX could not be removed, the maximize button stays active");
     }
 
     /// Kept up to date on every move and resize, so hiding and exiting only have to write.

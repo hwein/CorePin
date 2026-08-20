@@ -119,6 +119,15 @@ internal static partial class NativeMethods
     internal const uint WM_CONTEXTMENU = 0x007B;
     internal const uint WM_DPICHANGED = 0x02E0;
     internal const uint WS_OVERLAPPED = 0x00000000;
+    internal const uint WS_MAXIMIZEBOX = 0x00010000;
+    internal const int GWL_STYLE = -16;
+
+    /// Exported by name only in 64-bit user32; this build is x64 only, so no 32-bit branch.
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+    internal static partial nint GetWindowLongPtr(nint hWnd, int nIndex);
+
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    internal static partial nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
 
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

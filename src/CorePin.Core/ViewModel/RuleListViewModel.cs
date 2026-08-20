@@ -33,6 +33,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
     private Guid? _selectedRuleId;
     private Guid? _pendingDelete;
     private bool _faulted;
+    private bool _savedPending;
     private string? _lastAppliedExe;
     private DateTime? _lastAppliedUtc;
     private DateTime _lastTickUtc;
@@ -150,6 +151,14 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         {
             if (_faulted) return StatusLine.Stopped;
 
+            return _savedPending ? WatchingLine + StatusLine.SavedSuffix : WatchingLine;
+        }
+    }
+
+    private string WatchingLine
+    {
+        get
+        {
             bool anyApplied = _rows.Any(r => r.State == RuleState.Applied);
             if (!anyApplied || _lastAppliedExe is null || _lastAppliedUtc is not { } appliedUtc)
                 return StatusLine.Compose(_rows.Count, null, null);
@@ -210,6 +219,14 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         _lastTickUtc = heartbeat.TickUtc;
         _lastAppliedExe = heartbeat.LastAppliedExe;
         _lastAppliedUtc = heartbeat.LastAppliedUtc;
+        _savedPending = false;
+        Raise(nameof(StatusText));
+    }
+
+    /// The next heartbeat clears the suffix again, which is why this needs no timer.
+    public void NotifySaved()
+    {
+        _savedPending = true;
         Raise(nameof(StatusText));
     }
 

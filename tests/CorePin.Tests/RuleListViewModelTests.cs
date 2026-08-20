@@ -103,6 +103,34 @@ public static class RuleListViewModelTests
         Assert.Equal("Watching 3 rules", harness.Model.StatusText, "a disabled rule is still being watched over");
     }
 
+    public static void Test_StatusLine_SavedSuffixHoldsUntilTheNextHeartbeat()
+    {
+        var harness = TwoRules();
+        harness.Model.ApplyStatus([Status(Fixtures.IdA, RuleState.Applied, 1, 1, 42)]);
+        harness.Model.ApplyHeartbeat(new EngineHeartbeat(Tick.AddSeconds(3), 2, "a.exe", Tick));
+
+        harness.Model.NotifySaved();
+
+        Assert.Equal("Watching 2 rules · applied a.exe 3 s ago · saved", harness.Model.StatusText,
+            "the suffix hangs on the regular line");
+
+        harness.Model.ApplyHeartbeat(new EngineHeartbeat(Tick.AddSeconds(4), 2, "a.exe", Tick));
+
+        Assert.Equal("Watching 2 rules · applied a.exe 4 s ago", harness.Model.StatusText,
+            "the next heartbeat takes it away, no timer of its own");
+    }
+
+    public static void Test_StatusLine_SavedSuffixNeverOnTheFaultedForm()
+    {
+        var harness = TwoRules();
+        harness.Model.ApplyFault(new EngineFault("boom", 10));
+
+        harness.Model.NotifySaved();
+
+        Assert.Equal(StatusLine.Stopped, harness.Model.StatusText,
+            "'saved' behind 'Stopped watching' would mislead");
+    }
+
     public static void Test_Faulted_FourthStatusLineText()
     {
         var harness = TwoRules();

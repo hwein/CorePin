@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The log uses the standard .NET level names; the old values `info` and `warn` are still accepted.
+- The window can no longer be maximized; it stays freely resizable.
+- On first start the window opens above the system tray instead of screen-center.
+- A brief "saved" hint appears in the status line after changes are written.
 
 ### Fixed
 

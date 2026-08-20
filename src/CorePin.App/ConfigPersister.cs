@@ -20,9 +20,12 @@ internal sealed class ConfigPersister
         {
             Interval = TimeSpan.FromMilliseconds(SaveDebounce.DelayMs),
         };
-        _debounce = new SaveDebounce(save, _timer.Start, _timer.Stop);
+        _debounce = new SaveDebounce(config => { save(config); Saved?.Invoke(); }, _timer.Start, _timer.Stop);
         _timer.Tick += (_, _) => _debounce.OnTimerFired();
     }
+
+    /// Raised once a config actually reached the store, never for a coalesced request.
+    public event Action? Saved;
 
     public void RequestSave(AppConfig config) => _debounce.RequestSave(config);
 

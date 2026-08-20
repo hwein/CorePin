@@ -1,11 +1,14 @@
 namespace CorePin.Core.ViewModel;
 
-/// The four forms of the status line and the staged "ago" format behind the third one.
+/// The four forms of the status line, the saved suffix and the staged "ago" format.
 public static class StatusLine
 {
     public const string NoRules = "Watching for apps — no rules yet";
 
     public const string Stopped = "Stopped watching — quit from the tray icon and start CorePin again";
+
+    /// Appended to a watching line, never to Stopped: nothing is saved once watching ended.
+    public const string SavedSuffix = " · saved";
 
     public const string DebugTopologyHint = "Debug topology active — changes won't be saved.";
 

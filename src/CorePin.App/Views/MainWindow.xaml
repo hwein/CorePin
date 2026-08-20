@@ -143,6 +143,8 @@
       </Style.Triggers>
     </Style>
 
+    <!-- An explicit style bypasses the implicit Fluent one, so this template replaces the
+         classic chrome, which paints light in both themes and ignores a corner radius. -->
     <Style x:Key="CorePin.Style.AddButton" TargetType="Button">
       <Setter Property="MinWidth" Value="{StaticResource CorePin.HitTarget.MinWidth}"/>
       <Setter Property="MinHeight" Value="{StaticResource CorePin.HitTarget.MinHeight}"/>
@@ -150,6 +152,34 @@
       <Setter Property="IsEnabled" Value="{Binding IsEditable}"/>
       <Setter Property="ToolTip" Value="{Binding LockedTooltip}"/>
       <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+      <Setter Property="Padding" Value="8,0"/>
+      <Setter Property="Background" Value="{DynamicResource CorePin.Brush.CardBackground}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CorePin.Brush.Border}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="{DynamicResource CorePin.Brush.TextPrimary}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Surface"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{DynamicResource CorePin.Radius.Button}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Surface" Property="BorderBrush"
+                        Value="{x:Static SystemColors.AccentColorBrush}"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.55"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
 
     <!-- Only a debug build can ever reach a non-null hint. -->
