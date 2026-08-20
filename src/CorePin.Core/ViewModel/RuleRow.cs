@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using CorePin.Core.Engine;
+using CorePin.Core.Primitives;
 using CorePin.Core.Rules;
 
 namespace CorePin.Core.ViewModel;
@@ -7,13 +8,15 @@ namespace CorePin.Core.ViewModel;
 /// One line of the rule list. Every member expects the UI thread.
 public sealed class RuleRow : INotifyPropertyChanged
 {
+    private readonly Func<AffinityMask, string> _describe;
     private Rule _rule;
     private RuleStatus _status;
     private bool _confirmingDelete;
 
-    internal RuleRow(Rule rule, RuleState initialState)
+    internal RuleRow(Rule rule, RuleState initialState, Func<AffinityMask, string> describe)
     {
         _rule = rule;
+        _describe = describe;
         _status = new RuleStatus(rule.Id, initialState, 0, 0, 0, BlockReason.None);
     }
 
@@ -44,7 +47,7 @@ public sealed class RuleRow : INotifyPropertyChanged
         {
             var parts = new List<string>(5) { _rule.ExeName, RuleRowText.SecondLine(_status) };
             if (RuleRowText.Explanation(_status) is { } explanation) parts.Add(explanation);
-            parts.Add($"{_rule.Threads.Count} thr");
+            parts.Add($"{_rule.Threads.Count} thr · {_describe(_rule.Threads)}");
             if (_rule.LastKnownPath is { } path) parts.Add(path);
             return string.Join(Environment.NewLine, parts);
         }

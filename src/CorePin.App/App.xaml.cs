@@ -5,6 +5,7 @@ using CorePin.App.Themes;
 using CorePin.Core.Configuration;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Engine;
+using CorePin.Core.Layout;
 using CorePin.Core.Rules;
 using CorePin.Core.Time;
 using CorePin.Core.Topology;
@@ -81,8 +82,17 @@ public partial class App : Application
             new MachineInfo(_topology.CpuName, _topology.LogicalProcessorCount),
             _loaded.Config.Settings, _loaded.Outcome, _loaded.Detail, _loaded.RulesSkipped,
             ElevationInfo.IsElevated, (rules, change) => _engineHost.Submit(rules, change),
-            _persister.RequestSave, _log);
+            _persister.RequestSave, mask => SelectionDescription.Describe(_topology, mask), _log);
         window.DataContext = _viewModel;
+
+        //     The card view carries the rule id; the view model owns every rule change.
+        window.CpuMap.Initialize(_topology, Theme, text => TopologyActions.TryCopyText(text, _log));
+        window.CpuMap.SelectionChanged += (ruleId, mask) => _viewModel.SetSelection(ruleId, mask);
+        window.CpuMap.RuleEnabledChanged += (id, _) =>
+        {
+            if (id == _viewModel.SelectedRuleId) _viewModel.ToggleSelectedEnabled();
+        };
+        window.CpuMap.SetRule(_viewModel.SelectedRuleId, _viewModel.SelectedInput, _viewModel.LockedTooltip);
 
         // 5d. Subscribes first, shows the icon last.
         string logDirectory = _fileLog?.Directory ?? string.Empty;
@@ -156,6 +166,10 @@ public partial class App : Application
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // SelectedInput covers rule switches, selection edits, enable toggles and Faulted.
+        if (e.PropertyName == nameof(RuleListViewModel.SelectedInput) && MainWindow is Views.MainWindow window)
+            window.CpuMap.SetRule(_viewModel.SelectedRuleId, _viewModel.SelectedInput, _viewModel.LockedTooltip);
+
         if (e.PropertyName is not (nameof(RuleListViewModel.TotalRules)
                                    or nameof(RuleListViewModel.AppliedRules))) return;
 

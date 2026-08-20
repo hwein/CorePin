@@ -521,6 +521,26 @@ public static class RuleListViewModelTests
         Assert.True(!debounce.HasPendingSave, "nothing is left over");
     }
 
+    public static void Test_Log_SelectionChangedNamesCountAndDescription()
+    {
+        var harness = OneRule();
+
+        harness.Model.SetSelection(Fixtures.IdA, Fixtures.TwoThreads);
+
+        Assert.True(
+            harness.Log.Lines.Contains("Information rules rule 'a.exe' selection changed (2 threads: CCD 0)"),
+            "rules.selection-changed carries count and description, word for word");
+    }
+
+    public static void Test_Tooltip_ThreadLineCarriesTheDescription()
+    {
+        var harness = OneRule();
+
+        var lines = harness.Model.Rows[0].Tooltip.Split(Environment.NewLine);
+
+        Assert.True(lines.Contains("4 thr · CCD 0"), "the thread line names the cluster, not just the count");
+    }
+
     public static void Test_Log_RuleEventsUseTheSpecifiedWording()
     {
         var harness = new Harness(RuleSet.Empty);
@@ -590,6 +610,7 @@ public static class RuleListViewModelTests
                 isElevated,
                 (set, change) => Submits.Add((set, change)),
                 Saves.Add,
+                _ => "CCD 0",
                 Log);
 
         internal List<(RuleSet Rules, RuleChange Change)> Submits { get; } = [];

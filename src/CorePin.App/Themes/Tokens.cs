@@ -30,6 +30,7 @@ public static class Tokens
 
     // RadiusValue instead of Radius: self-drawing code needs double, not CornerRadius.
     public static double RadiusCoreCell => Read<double>("CorePin.RadiusValue.CoreCell");
+    public static double RadiusCard => Read<double>("CorePin.RadiusValue.Card");
     public static double Spacing4 => Read<double>("CorePin.Spacing.4");
     public static double Spacing8 => Read<double>("CorePin.Spacing.8");
     public static double Spacing12 => Read<double>("CorePin.Spacing.12");
@@ -50,7 +51,7 @@ public static class Tokens
         _ = (StatusApplied, StatusBlocked, StatusIdle, CardBackground, WindowBackground,
              TextPrimary, TextSecondary, Border, FontUI, FontHeading, FontMono,
              FontSizeUI, FontSizeHeading, FontSizeMono, FontWeightHeading,
-             RadiusCoreCell, Spacing4, Spacing8, Spacing12,
+             RadiusCoreCell, RadiusCard, Spacing4, Spacing8, Spacing12,
              HitTargetMinWidth, HitTargetMinHeight);
 
         ValidateRadiusPairConsistency("CoreCell");

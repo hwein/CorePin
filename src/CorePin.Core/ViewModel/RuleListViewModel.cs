@@ -26,6 +26,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
     private readonly string? _skippedBanner;
     private readonly Action<RuleSet, RuleChange> _submit;
     private readonly Action<AppConfig> _requestSave;
+    private readonly Func<AffinityMask, string> _describeSelection;
     private readonly ILog _log;
 
     private RuleSet _rules;
@@ -51,6 +52,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         bool isElevated,
         Action<RuleSet, RuleChange> submit,
         Action<AppConfig> requestSave,
+        Func<AffinityMask, string> describeSelection,
         ILog log)
     {
         ArgumentNullException.ThrowIfNull(rules);
@@ -60,6 +62,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(submit);
         ArgumentNullException.ThrowIfNull(requestSave);
+        ArgumentNullException.ThrowIfNull(describeSelection);
         ArgumentNullException.ThrowIfNull(log);
 
         _rules = rules;
@@ -72,6 +75,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         _currentWindowBounds = settings.WindowBounds;
         _submit = submit;
         _requestSave = requestSave;
+        _describeSelection = describeSelection;
         _log = log;
         IsElevated = isElevated;
         _rowsReadOnly = new ReadOnlyObservableCollection<RuleRow>(_rows);
@@ -246,6 +250,8 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         _rules = _rules.With(updated);
         if (_rowsById.TryGetValue(ruleId, out var row)) row.Apply(updated);
 
+        _log.Information("rules",
+            $"rule '{updated.ExeName}' selection changed ({threads.Count} threads: {_describeSelection(threads)})");
         _submit(_rules, new RuleChange(RuleChangeKind.SelectionChanged, ruleId));
         RequestSave();
         Raise(nameof(Banners));
@@ -314,7 +320,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
 
     private void AddRow(Rule rule)
     {
-        var row = new RuleRow(rule, InitialState(rule));
+        var row = new RuleRow(rule, InitialState(rule), _describeSelection);
         _rowsById[rule.Id] = row;
 
         int index = 0;

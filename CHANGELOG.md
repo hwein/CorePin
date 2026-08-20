@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The window opens centered on the monitor with the mouse pointer on first start.
 - The tray tooltip shows the current rule counts.
 - A shield marker in the status line shows when CorePin runs elevated.
+- Interactive CPU map: one cell per core with clickable SMT halves, cluster headers with facts, and hover/keyboard support.
+- Presets generated from the detected topology (All plus one per cluster) and an SMT threads toggle.
+- Map footer with live thread count and a click-to-copy affinity mask.
+- Changing a rule's cores applies immediately to running processes and is saved automatically.
+- On unrecognized CPUs the map shows generic group names with a "Help us name them" button that copies the topology.
 
 ### Changed
 

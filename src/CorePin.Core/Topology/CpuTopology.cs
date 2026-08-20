@@ -34,6 +34,6 @@ public sealed record CpuCluster
 
 public sealed record PhysicalCore
 {
-    // at least 1, with SMT 2 — more is allowed and is not rejected
+    // ascending; at least 1, with SMT 2 — more is allowed and is not rejected
     public required IReadOnlyList<int> Threads { get; init; }
 }
