@@ -31,6 +31,14 @@ public partial class MainWindow : Window
         return fade;
     }
 
+    /// A plain jump, no animation: the 120 ms fade stays reserved for state changes.
+    public void ScrollRuleIntoView(Guid ruleId)
+    {
+        if (ViewModel?.RowById(ruleId) is not { } row) return;
+
+        RuleList.ScrollIntoView(row);
+    }
+
     /// Preview, not bubbling: ListBoxItem consumes Space for its own selection toggle first.
     /// Editing stays locked or unlocked in the view model; a blocked key is silent on purpose.
     private void RuleList_PreviewKeyDown(object sender, KeyEventArgs e)

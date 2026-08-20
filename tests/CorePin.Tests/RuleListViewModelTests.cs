@@ -11,6 +11,8 @@ namespace CorePin.Tests;
 /// The window state without a window: rows, status line, banners, locks, delete, saving.
 public static class RuleListViewModelTests
 {
+    private const string LatePath = @"C:\Games\a.exe";
+
     private static readonly Guid IdC = new("cccccccc-0000-0000-0000-000000000003");
     private static readonly DateTime Tick = new(2026, 8, 19, 10, 0, 0, DateTimeKind.Utc);
 
@@ -422,6 +424,96 @@ public static class RuleListViewModelTests
 
         Assert.True(harness.Model.SelectedRuleId is null, "the deleted rule leaves no selection behind");
         Assert.True(harness.Model.SelectedInput is null, "and the card falls back to plain hardware");
+    }
+
+    public static void Test_AddOrSelect_NewRuleCreatedSelectedSubmitted()
+    {
+        var harness = new Harness(RuleSet.Empty);
+
+        var result = harness.Model.AddOrSelect("cyberpunk2077.exe", LatePath);
+
+        Assert.True(result.IsNew, "nothing matched, so the picker created a rule");
+        Assert.True(result.Rule is not null, "and hands it back for the icon wiring");
+        // The Assert.True above already proved this is not null.
+        Assert.Equal((Guid?)result.Rule!.Id, harness.Model.SelectedRuleId, "the new rule is selected");
+        Assert.Equal(LatePath, result.Rule.LastKnownPath, "with the path it was handed");
+        Assert.Equal(1, harness.Model.Rows.Count, "and it is in the list");
+        Assert.Equal(RuleChangeKind.Added, harness.Submits[^1].Change.Kind, "the engine hears Added");
+        Assert.Equal(1, harness.Saves.Count, "and it is saved");
+    }
+
+    public static void Test_AddOrSelect_DuplicateOnlyMovesSelection()
+    {
+        var harness = TwoRules();
+        harness.Model.SelectedRuleId = Fixtures.IdB;
+        int submits = harness.Submits.Count;
+        int saves = harness.Saves.Count;
+
+        var result = harness.Model.AddOrSelect("A.EXE", LatePath);
+
+        Assert.True(!result.IsNew, "the existing rule is picked instead of a second one");
+        Assert.True(result.Rule is not null, "and comes back for the caller's icon wiring");
+        Assert.Equal((Guid?)Fixtures.IdA, harness.Model.SelectedRuleId, "the selection jumps to it");
+        Assert.Equal(2, harness.Model.Rows.Count, "no second row appears");
+        // The Assert.True above already proved this is not null.
+        Assert.True(result.Rule!.LastKnownPath is null, "the existing rule keeps its own path");
+        Assert.Equal(submits, harness.Submits.Count, "the engine hears nothing");
+        Assert.Equal(saves, harness.Saves.Count, "and nothing is saved");
+    }
+
+    public static void Test_AddOrSelect_FaultedDoesNothing()
+    {
+        var harness = OneRule();
+        harness.Model.ApplyFault(new EngineFault("boom", 10));
+        int submits = harness.Submits.Count;
+        int saves = harness.Saves.Count;
+
+        var result = harness.Model.AddOrSelect("b.exe", null);
+
+        Assert.True(result.Rule is null, "locked editing creates nothing");
+        Assert.True(!result.IsNew, "and reports nothing as new");
+        Assert.Equal(1, harness.Model.Rows.Count, "the list is unchanged");
+        Assert.True(harness.Model.SelectedRuleId is null, "not even the selection moves");
+        Assert.Equal(submits, harness.Submits.Count, "no submit");
+        Assert.Equal(saves, harness.Saves.Count, "no save");
+    }
+
+    public static void Test_PatchLastKnownPath_KeepsInterimChanges()
+    {
+        var harness = new Harness(RuleSet.Empty);
+        harness.Model.AddRule(Fixtures.Rule(Fixtures.IdA, "a.exe", Fixtures.Machine));
+        harness.Model.SetSelection(Fixtures.IdA, Fixtures.TwoThreads);
+        int submits = harness.Submits.Count;
+        int saves = harness.Saves.Count;
+
+        harness.Model.PatchLastKnownPath(Fixtures.IdA, LatePath);
+
+        var patched = harness.Saves[^1].Rules.ById(Fixtures.IdA);
+
+        Assert.True(patched is not null, "the rule is still in the authoritative set");
+        // The Assert.True above already proved this is not null.
+        Assert.Equal(Fixtures.TwoThreads, patched!.Threads, "the selection made meanwhile is not rolled back");
+        Assert.Equal(LatePath, patched.LastKnownPath, "and the late path is now part of the set");
+        Assert.Equal(submits, harness.Submits.Count, "a display-only field never reaches the engine");
+        Assert.Equal(saves + 1, harness.Saves.Count, "but it is saved like any other change");
+        Assert.True(Row(harness, Fixtures.IdA).Tooltip.Contains(LatePath, StringComparison.Ordinal),
+            "and the row shows the path it just learned");
+    }
+
+    public static void Test_PatchLastKnownPath_NoOpWhenRuleDeleted()
+    {
+        var harness = new Harness(RuleSet.Empty);
+        harness.Model.AddRule(Fixtures.Rule(Fixtures.IdA, "a.exe", Fixtures.Machine));
+        harness.Model.DeleteSelectedRule();
+        harness.Model.DeleteSelectedRule();
+        int submits = harness.Submits.Count;
+        int saves = harness.Saves.Count;
+
+        harness.Model.PatchLastKnownPath(Fixtures.IdA, LatePath);
+
+        Assert.Equal(saves, harness.Saves.Count, "a late path does not write a deleted rule back");
+        Assert.Equal(submits, harness.Submits.Count, "and the engine hears nothing either");
+        Assert.True(harness.Saves[^1].Rules.ById(Fixtures.IdA) is null, "the rule stays gone");
     }
 
     public static void Test_Save_BuiltFromTheMarkedRuleSet()

@@ -94,6 +94,9 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
     /// Sorted by exe name, OrdinalIgnoreCase; a state change never re-sorts.
     public ReadOnlyObservableCollection<RuleRow> Rows => _rowsReadOnly;
 
+    /// The one row of a rule, for callers that hand a late icon to exactly that line.
+    public RuleRow? RowById(Guid ruleId) => _rowsById.GetValueOrDefault(ruleId);
+
     public bool IsElevated { get; }
 
     public bool IsEditable => _guard.CanEditRules && !_faulted;
@@ -238,6 +241,32 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         _submit(_rules, new RuleChange(RuleChangeKind.Added, rule.Id));
         RequestSave();
         RaiseListCounts();
+    }
+
+    /// Both ways into a rule end here: a new one is added and submitted, a duplicate only
+    /// moves the selection, and locked editing returns a null rule without any effect.
+    public RuleCreationResult AddOrSelect(string exeName, string? lastKnownPath)
+    {
+        var result = RuleCreation.CreateOrSelect(_rules, IsEditable, _machineMask, exeName, lastKnownPath);
+        if (result.Rule is not { } rule) return result;
+
+        if (result.IsNew) AddRule(rule);
+        else SelectedRuleId = rule.Id;
+        return result;
+    }
+
+    /// A path that arrives late patches the current rule, never the one captured when it was
+    /// created — and nothing at all once it is deleted. No Submit: the path is display only.
+    public void PatchLastKnownPath(Guid ruleId, string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        if (_rules.ById(ruleId) is not { } current) return;
+
+        var updated = current with { LastKnownPath = path };
+        _rules = _rules.With(updated);
+        if (_rowsById.TryGetValue(ruleId, out var row)) row.Apply(updated);
+
+        RequestSave();
     }
 
     /// New mask and NeedsReview=false in one atomic step — the engine never sees the in-between.

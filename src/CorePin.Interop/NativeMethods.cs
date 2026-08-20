@@ -228,6 +228,13 @@ internal static partial class NativeMethods
         nint presbits, uint dwResSize, [MarshalAs(UnmanagedType.Bool)] bool fIcon, uint dwVer,
         int cxDesired, int cyDesired, uint flags);
 
+    /// phicon takes a span of raw handles: [LibraryImport] cannot marshal a SafeHandle array.
+    [LibraryImport("user32.dll", EntryPoint = "PrivateExtractIconsW", SetLastError = true,
+                   StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial uint PrivateExtractIcons(
+        string szFileName, int nIconIndex, int cxIcon, int cyIcon,
+        Span<nint> phicon, nint piconid, uint nIcons, uint flags);
+
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool DestroyIcon(nint hIcon);

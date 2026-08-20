@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using CorePin.App.Themes;
 using CorePin.Core.Configuration;
 using CorePin.Core.Diagnostics;
@@ -110,8 +112,27 @@ public partial class App : Application
         _trayController.UpdateTooltip(_viewModel.TotalRules, _viewModel.AppliedRules);
         _trayController.ExitRequested += OnExitRequested;
 
+        // 5g. Rule creation: file dialog, picker flyout, and the icons of stored rules.
+        RuleIconLoader.Initialize(_log);
+        var inventory = new ProcessInventory();
+        window.Flyout.Initialize(window.FromRunningButton, _viewModel,
+            () => [.. inventory.ListOwnSession().Select(p => new ProcessRow(p.Pid, p.ExeName))],
+            OnProcessPicked);
+        window.FromRunningButton.Click += (_, _) => window.Flyout.OnTriggerClick();
+        window.AddAppButton.Click += (_, _) => OnAddAppClick(window);
+        foreach (var rule in _rules.Rules)
+        {
+            if (rule.LastKnownPath is not { } path) continue;
+
+            var id = rule.Id;
+            RuleIconLoader.LoadFromPath(path, icon =>
+            {
+                if (_viewModel.RowById(id) is { } row) row.Icon = icon;
+            });
+        }
+
         // 6. Engine and watcher.
-        var engine = new AffinityEngine(new ProcessInventory(), new AffinityAccess(), _clock, _log,
+        var engine = new AffinityEngine(inventory, new AffinityAccess(), _clock, _log,
                                         _topology.MachineMask);
         _engineHost = new EngineHost(engine, _clock, _log, _loaded.Config.Settings.PollIntervalMs);
         _engineBridge = new EngineBridge(_engineHost, Dispatcher, _viewModel);
@@ -119,9 +140,10 @@ public partial class App : Application
         _engineHost.Start();
 
         // 7. Placed even with --tray: the window exists from the start and is never shown.
+        //    The flyout hangs in its own HWND and cannot follow the window, so it closes.
         PlaceWindow(window);
-        window.LocationChanged += (_, _) => CaptureBounds(window);
-        window.SizeChanged += (_, _) => CaptureBounds(window);
+        window.LocationChanged += (_, _) => { CaptureBounds(window); window.Flyout.CloseFlyout(); };
+        window.SizeChanged += (_, _) => { CaptureBounds(window); window.Flyout.CloseFlyout(); };
         if (!_options.Tray) window.Show();
     }
 
@@ -170,10 +192,74 @@ public partial class App : Application
         if (e.PropertyName == nameof(RuleListViewModel.SelectedInput) && MainWindow is Views.MainWindow window)
             window.CpuMap.SetRule(_viewModel.SelectedRuleId, _viewModel.SelectedInput, _viewModel.LockedTooltip);
 
+        // A flyout that is open when editing locks up (Faulted) must not finish its pick.
+        if (e.PropertyName == nameof(RuleListViewModel.IsEditable)
+            && !_viewModel.IsEditable && MainWindow is Views.MainWindow lockedWindow)
+            lockedWindow.Flyout.CloseFlyout();
+
         if (e.PropertyName is not (nameof(RuleListViewModel.TotalRules)
                                    or nameof(RuleListViewModel.AppliedRules))) return;
 
         _trayController.UpdateTooltip(_viewModel.TotalRules, _viewModel.AppliedRules);
+    }
+
+    /// A picked flyout row hands over what it already resolved; only a row still
+    /// unresolved starts one late job, bound to the rule id, never to the flyout generation.
+    private void OnProcessPicked(Views.FlyoutProcessRow row)
+    {
+        var result = _viewModel.AddOrSelect(row.ExeName, row.ResolvedPath);
+        if (result.Rule is not { } rule) return;
+
+        if (result.IsNew && row.ResolvedPath is null && !row.Resolved)
+        {
+            var id = rule.Id;
+            RuleIconLoader.LoadFromProcess(row.Pid, (path, icon) =>
+            {
+                if (path is not null) _viewModel.PatchLastKnownPath(id, path);
+                if (_viewModel.RowById(id) is { } lateRow) lateRow.Icon = icon;
+            });
+        }
+        else
+        {
+            // A duplicate pick (result.IsNew false) stays fully inconsequential: selection/scroll only.
+            if (result.IsNew && row.Icon is BitmapSource icon && _viewModel.RowById(rule.Id) is { } ruleRow)
+                ruleRow.Icon = icon;
+        }
+
+        if (MainWindow is Views.MainWindow window) window.ScrollRuleIntoView(rule.Id);
+    }
+
+    private void OnAddAppClick(Views.MainWindow window)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Add app",
+            Filter = "Applications (*.exe)|*.exe",
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+        if (dialog.ShowDialog(window) != true) return;
+
+        string fileName = dialog.FileName;
+        // The filter narrows the view, not the return value: a typed-in name can bypass it.
+        if (!Path.GetExtension(fileName).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            _log.Debug("rules", "file dialog returned a non-exe path, ignored");
+            return;
+        }
+
+        var result = _viewModel.AddOrSelect(Path.GetFileName(fileName), fileName);
+        if (result.Rule is not { } rule) return;
+
+        if (result.IsNew)
+        {
+            var id = rule.Id;
+            RuleIconLoader.LoadFromPath(fileName, icon =>
+            {
+                if (_viewModel.RowById(id) is { } row) row.Icon = icon;
+            });
+        }
+        window.ScrollRuleIntoView(rule.Id);
     }
 
     protected override void OnExit(ExitEventArgs e)

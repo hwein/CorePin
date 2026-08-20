@@ -89,7 +89,7 @@
                        FontFamily="Segoe UI Symbol"
                        Foreground="{StaticResource CorePin.Brush.StatusIdle}"/>
             <Image Grid.Column="1" Width="20" Height="20" Stretch="Uniform" Margin="4,0,0,0"
-                   Source="{StaticResource CorePin.Icon.Placeholder}"/>
+                   Source="{Binding Icon, TargetNullValue={StaticResource CorePin.Icon.Placeholder}}"/>
             <TextBlock Grid.Column="2" Text="{Binding DisplayName}" VerticalAlignment="Center"
                        Margin="4,0,0,0"/>
           </Grid>
@@ -203,7 +203,7 @@
                    FontWeight="{StaticResource CorePin.FontWeight.Heading}"
                    Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
 
-        <ListBox Grid.Row="1" ItemsSource="{Binding Rows}"
+        <ListBox x:Name="RuleList" Grid.Row="1" ItemsSource="{Binding Rows}"
                  Style="{StaticResource CorePin.Style.RuleList}"
                  ItemTemplate="{StaticResource CorePin.Template.RuleRow}"
                  ItemContainerStyle="{StaticResource CorePin.Style.RuleRowItem}"
@@ -221,9 +221,12 @@
                    Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
 
         <StackPanel Grid.Row="2" Margin="0,8,0,0">
-          <Button Content="+ Add app" Style="{StaticResource CorePin.Style.AddButton}"/>
-          <Button Content="+ From running…" Margin="0,4,0,0"
+          <Button x:Name="AddAppButton" Content="+ Add app"
                   Style="{StaticResource CorePin.Style.AddButton}"/>
+          <Button x:Name="FromRunningButton" Content="+ From running…" Margin="0,4,0,0"
+                  Style="{StaticResource CorePin.Style.AddButton}"/>
+          <!-- Renders nothing in place; its popup opens below the button above. -->
+          <views:ProcessFlyout x:Name="Flyout"/>
         </StackPanel>
       </Grid>
 

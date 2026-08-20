@@ -12,6 +12,7 @@ public sealed class RuleRow : INotifyPropertyChanged
     private Rule _rule;
     private RuleStatus _status;
     private bool _confirmingDelete;
+    private object? _icon;
 
     internal RuleRow(Rule rule, RuleState initialState, Func<AffinityMask, string> describe)
     {
@@ -37,6 +38,19 @@ public sealed class RuleRow : INotifyPropertyChanged
     public bool IsDimmed => State == RuleState.Disabled;
 
     public bool IsConfirmingDelete => _confirmingDelete;
+
+    /// A BitmapSource at runtime; typed as object so this assembly stays WPF-free.
+    public object? Icon
+    {
+        get => _icon;
+        set
+        {
+            if (ReferenceEquals(_icon, value)) return;
+
+            _icon = value;
+            Raise(nameof(Icon));
+        }
+    }
 
     public string SecondLine => LineBudget.Fit(
         _confirmingDelete ? RuleRowText.DeleteConfirmation : RuleRowText.SecondLine(_status));

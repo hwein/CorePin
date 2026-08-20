@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Map footer with live thread count and a click-to-copy affinity mask.
 - Changing a rule's cores applies immediately to running processes and is saved automatically.
 - On unrecognized CPUs the map shows generic group names with a "Help us name them" button that copies the topology.
+- "+ From running…" opens a searchable picker of running programs; Enter or double-click creates the rule.
+- "+ Add app" creates a rule from an .exe picked in a file dialog.
+- Rule rows show the program's real icon, extracted in the background; a neutral placeholder stands in when there is none.
 
 ### Changed
 
