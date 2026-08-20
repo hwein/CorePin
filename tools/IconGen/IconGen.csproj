@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Deliberately outside CorePin.sln: building the product must never need this tool. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>IconGen</RootNamespace>
+    <AssemblyName>IconGen</AssemblyName>
+  </PropertyGroup>
+</Project>

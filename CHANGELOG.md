@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "+ From running…" opens a searchable picker of running programs; Enter or double-click creates the rule.
 - "+ Add app" creates a rule from an .exe picked in a file dialog.
 - Rule rows show the program's real icon, extracted in the background; a neutral placeholder stands in when there is none.
+- Real application and tray icons (the "one core lit" grid) replace the placeholder art, with light and dark tray variants.
 
 ### Changed
 

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 16">
+  <!-- Production source of assets/CorePin.ico, tray-light.ico and tray-dark.ico.
+       Four variants, each in its own 16x16 reference box, placed 18 units apart.
+       Rendered by tools/IconGen; no presentation artwork belongs in this file. -->
+  <!-- An SVG stroke sits centred on the path, so the eight outlined cells are inset
+       by half a stroke width and shrunk by a full one; the filled cell carries no
+       stroke and therefore keeps its nominal size. -->
+
+  <g id="tray-light" transform="translate(0,0)">
+    <rect x="0.5" y="0.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="6.5" y="0.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="0.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="6.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="12.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="0.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="6.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="12.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    <rect x="12" y="0" width="4" height="4" rx="1" fill="#FFFFFF" stroke="none"/>
+  </g>
+
+  <g id="tray-dark" transform="translate(18,0)">
+    <rect x="0.5" y="0.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="6.5" y="0.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="0.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="6.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="12.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="0.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="6.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="12.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#111111" stroke-width="1"/>
+    <rect x="12" y="0" width="4" height="4" rx="1" fill="#111111" stroke="none"/>
+  </g>
+
+  <!-- Bordered tile, 20 px reference scaled into 16 units: border 1.6, grid 12.8,
+       factor 0.8, tile radius 0.2125 x 16. Renders 20/32/48/64/256. -->
+  <g id="app-tile" transform="translate(36,0)">
+    <rect x="0" y="0" width="16" height="16" rx="3.4" fill="#22262B" stroke="none"/>
+    <rect x="2" y="2" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="6.8" y="2" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="2" y="6.8" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="6.8" y="6.8" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="11.6" y="6.8" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="2" y="11.6" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="6.8" y="11.6" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="11.6" y="11.6" width="2.4" height="2.4" rx="0.4" fill="none" stroke="#E6E9EC" stroke-width="0.8"/>
+    <rect x="11.2" y="1.6" width="3.2" height="3.2" rx="0.8" fill="#4C8DFF" stroke="none"/>
+  </g>
+
+  <!-- Borderless tile: grid fills the tile, so the tile radius follows the cell
+       radius instead of the 21.25 % rule. Renders 16 and 24. -->
+  <g id="app-tile-borderless" transform="translate(54,0)">
+    <rect x="0" y="0" width="16" height="16" rx="1" fill="#22262B" stroke="none"/>
+    <rect x="0.5" y="0.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="6.5" y="0.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="0.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="6.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="12.5" y="6.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="0.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="6.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="12.5" y="12.5" width="3" height="3" rx="0.5" fill="none" stroke="#E6E9EC" stroke-width="1"/>
+    <rect x="12" y="0" width="4" height="4" rx="1" fill="#4C8DFF" stroke="none"/>
+  </g>
+</svg>

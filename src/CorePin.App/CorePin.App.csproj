@@ -35,20 +35,22 @@
         Value="true" />
   </ItemGroup>
 
-  <!-- Fails when icon.svg is newer than one of the three .ico derivations. -->
+  <!-- Fails when icon.svg's content no longer matches the .ico files exported from it.
+       Content-hash based, not timestamp based: a checkout, switch or stash pop can leave
+       icon.svg with a newer mtime than the .ico files without anything being stale. -->
   <Target Name="CorePinIconFreshnessCheck" BeforeTargets="Build"
           Condition="Exists('$(MSBuildProjectDirectory)\..\..\assets\icon.svg')">
+    <GetFileHash Files="$(MSBuildProjectDirectory)\..\..\assets\icon.svg" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_CorePinSvgHashed" />
+    </GetFileHash>
     <PropertyGroup>
-      <_CorePinSvgTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\..\..\assets\icon.svg').Ticks)</_CorePinSvgTime>
-      <_CorePinIcoTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\..\..\assets\CorePin.ico').Ticks)</_CorePinIcoTime>
-      <_TrayLightIcoTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\..\..\assets\tray-light.ico').Ticks)</_TrayLightIcoTime>
-      <_TrayDarkIcoTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\..\..\assets\tray-dark.ico').Ticks)</_TrayDarkIcoTime>
+      <_CorePinSvgHash>%(_CorePinSvgHashed.FileHash)</_CorePinSvgHash>
+      <_CorePinSvgHashSidecar>$(MSBuildProjectDirectory)\..\..\assets\icon.svg.sha256</_CorePinSvgHashSidecar>
     </PropertyGroup>
-    <Error Condition="$(_CorePinSvgTime) &gt; $(_CorePinIcoTime)"
-           Text="assets/icon.svg is newer than assets/CorePin.ico — re-export the icons." />
-    <Error Condition="$(_CorePinSvgTime) &gt; $(_TrayLightIcoTime)"
-           Text="assets/icon.svg is newer than assets/tray-light.ico — re-export the icons." />
-    <Error Condition="$(_CorePinSvgTime) &gt; $(_TrayDarkIcoTime)"
-           Text="assets/icon.svg is newer than assets/tray-dark.ico — re-export the icons." />
+    <PropertyGroup Condition="Exists('$(_CorePinSvgHashSidecar)')">
+      <_CorePinSidecarHash>$([System.IO.File]::ReadAllText('$(_CorePinSvgHashSidecar)').Trim())</_CorePinSidecarHash>
+    </PropertyGroup>
+    <Error Condition="'$(_CorePinSvgHash.ToUpperInvariant())' != '$(_CorePinSidecarHash.ToUpperInvariant())'"
+           Text="assets/icon.svg does not match its exported .ico files — run 'dotnet run --project tools\IconGen'." />
   </Target>
 </Project>

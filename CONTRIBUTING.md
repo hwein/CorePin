@@ -75,6 +75,8 @@ description or a linked issue. It gets read and decided, not debated.
   --project tests/CorePin.Tests`); there is no `dotnet test`, because a test framework
   would be a NuGet dependency.
 - `dotnet build` and the test run must both be green.
+- Icon binaries under `assets/` are generated from `assets/icon.svg` with `dotnet run
+  --project tools\IconGen`; the build fails if they are out of sync.
 - Commit messages follow [Conventional Commits
   1.0.0](https://www.conventionalcommits.org/en/v1.0.0/): imperative, subject line 72
   characters or less. A body only if it explains something the diff does not.
