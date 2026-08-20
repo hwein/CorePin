@@ -14,11 +14,13 @@ public partial class CpuMapView : UserControl
 {
     private const string ClipboardBusyNotice = "Couldn't copy — the clipboard is busy.";
     private const string TopologyCopiedNotice = "Topology copied — paste it into a new GitHub issue.";
+    private const string TopologyCopiedOpenedNotice = "Topology copied — finish the issue in your browser.";
     private const string CopyMaskTooltip = "Copy the affinity mask";
 
     private readonly List<Button> _presetButtons = [];
     private CpuTopology? _topology;
     private Func<string, bool>? _copyText;
+    private Func<bool>? _openIssuePage;
     private Guid? _ruleId;
     private CpuCardInput? _input;
     private string? _lockedTooltip;
@@ -33,14 +35,17 @@ public partial class CpuMapView : UserControl
 
     public event Action<Guid, bool>? RuleEnabledChanged;
 
-    public void Initialize(CpuTopology topology, ThemeController theme, Func<string, bool> copyText)
+    public void Initialize(CpuTopology topology, ThemeController theme, Func<string, bool> copyText,
+                            Func<bool> openIssuePage)
     {
         ArgumentNullException.ThrowIfNull(topology);
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(copyText);
+        ArgumentNullException.ThrowIfNull(openIssuePage);
 
         _topology = topology;
         _copyText = copyText;
+        _openIssuePage = openIssuePage;
         Map.Initialize(topology, theme);
         Map.SelectionChanged += OnMapSelectionChanged;
         Map.Notice += OnMapNotice;
@@ -103,11 +108,20 @@ public partial class CpuMapView : UserControl
         Refresh();
     }
 
-    /// Copies the dump only — the issue URL is not settled yet, so no browser is opened.
+    /// No browser opens unless the copy succeeds first — an empty clipboard would invite an empty issue.
     private void HelpNameButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_topology is not { } topology || _copyText is not { } copy) return;
-        _notice = copy(TopologyJson.Serialize(topology.Source)) ? TopologyCopiedNotice : ClipboardBusyNotice;
+        if (_topology is not { } topology || _copyText is not { } copy || _openIssuePage is not { } openIssuePage)
+            return;
+
+        if (!copy(TopologyJson.Serialize(topology.Source)))
+        {
+            _notice = ClipboardBusyNotice;
+            Refresh();
+            return;
+        }
+
+        _notice = openIssuePage() ? TopologyCopiedOpenedNotice : TopologyCopiedNotice;
         Refresh();
     }
 

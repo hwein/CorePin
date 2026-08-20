@@ -98,7 +98,8 @@ public partial class App : Application
         if (_guard.CanPersist) _persister.Saved += () => _viewModel.NotifySaved();
 
         //     The card view carries the rule id; the view model owns every rule change.
-        window.CpuMap.Initialize(_topology, Theme, text => TopologyActions.TryCopyText(text, _log));
+        window.CpuMap.Initialize(_topology, Theme, text => TopologyActions.TryCopyText(text, _log),
+            () => TopologyActions.TryOpenIssuePage(_topology.CpuName, _log));
         window.CpuMap.SelectionChanged += (ruleId, mask) => _viewModel.SetSelection(ruleId, mask);
         window.CpuMap.RuleEnabledChanged += (id, _) =>
         {

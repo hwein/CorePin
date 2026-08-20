@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Presets generated from the detected topology (All plus one per cluster) and an SMT threads toggle.
 - Map footer with live thread count and a click-to-copy affinity mask.
 - Changing a rule's cores applies immediately to running processes and is saved automatically.
-- On unrecognized CPUs the map shows generic group names with a "Help us name them" button that copies the topology.
+- On unrecognized CPUs the map shows generic group names with a "Help us name them" button that copies the topology and opens a prefilled GitHub issue.
 - "+ From running…" opens a searchable picker of running programs; Enter or double-click creates the rule.
 - "+ Add app" creates a rule from an .exe picked in a file dialog.
 - Rule rows show the program's real icon, extracted in the background; a neutral placeholder stands in when there is none.
