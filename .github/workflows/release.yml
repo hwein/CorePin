@@ -1,0 +1,45 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, e.g. v0.0.1'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Test
+        run: dotnet run --project tests\CorePin.Tests
+
+      - name: Publish
+        run: dotnet publish src\CorePin.App -c Release -p:SelfContained=true -p:RuntimeIdentifier=win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:PublishReadyToRun=false -o out
+
+      - name: Package
+        run: |
+          $zip = "CorePin-$env:TAG-win-x64.zip"
+          Compress-Archive -Path out\CorePin.exe -DestinationPath $zip
+          "$((Get-FileHash $zip -Algorithm SHA256).Hash.ToLower())  $zip" | Set-Content "$zip.sha256" -Encoding ascii
+
+      - name: Release
+        run: gh release create $env:TAG "CorePin-$env:TAG-win-x64.zip" "CorePin-$env:TAG-win-x64.zip.sha256" --title "CorePin $env:TAG" --notes "Changes: https://github.com/${{ github.repository }}/blob/$env:TAG/CHANGELOG.md"
+        env:
+          GH_TOKEN: ${{ github.token }}
