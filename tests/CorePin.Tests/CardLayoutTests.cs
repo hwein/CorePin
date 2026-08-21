@@ -10,7 +10,7 @@ public static class CardLayoutTests
     {
         var layout = Build(Fixtures.Ryzen7945HX, 400);
 
-        Assert.Equal(398.0, layout.Width, "width capped at the natural full width");
+        Assert.Equal(400.0, layout.Width, "the card takes the full available width");
         Assert.Equal(2, layout.Clusters.Count, "two CCDs");
         foreach (var cluster in layout.Clusters)
         {
@@ -147,7 +147,7 @@ public static class CardLayoutTests
         Assert.Equal("158,102,102", string.Join(",", h.Clusters.Select(c => c.Frame.Height)),
             "only the P cluster wraps");
 
-        Assert.Equal(212.0, Build(Fixtures.Phoenix2, 283).Height, "Phoenix 2 stays at its natural width");
+        Assert.Equal(212.0, Build(Fixtures.Phoenix2, 283).Height, "Phoenix 2 keeps its height at any width");
     }
 
     public static void Test_ClusterHeightPerRowCount()
@@ -261,14 +261,15 @@ public static class CardLayoutTests
             "two builds with the same input are structurally identical");
     }
 
-    public static void Test_WidthCappedAtNaturalWidth()
+    public static void Test_FramesAlwaysSpanTheAvailableWidth()
     {
         var wide = Build(Fixtures.Ryzen7945HX, 10_000);
-        Assert.Equal(398.0, wide.Width, "capped at the natural full width");
-        Assert.True(wide.Clusters.All(c => c.Frame.Width == 398), "all frames share the capped width");
-        Assert.Equal(212.0, wide.Height, "same height as at the cap");
+        Assert.Equal(10_000.0, wide.Width, "the card takes the whole available width");
+        Assert.True(wide.Clusters.All(c => c.Frame.Width == 10_000), "every frame spans it");
+        Assert.Equal(212.0, wide.Height, "extra width never changes the height");
 
-        Assert.Equal(302.0, Build(Fixtures.CoreUltra155H, 400).Width, "widest cluster rules the cap");
-        Assert.Equal(300.0, Build(Fixtures.Ryzen7945HX, 300).Width, "below the cap the available width wins");
+        Assert.Equal(400.0, Build(Fixtures.CoreUltra155H, 400).Width, "a narrow topology still fills the card");
+        Assert.Equal(400.0, Build(Fixtures.Phoenix2, 400).Width, "even with four cells per cluster");
+        Assert.Equal(300.0, Build(Fixtures.Ryzen7945HX, 300).Width, "a narrow card narrows the frames");
     }
 }

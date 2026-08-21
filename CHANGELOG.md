@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The window can no longer be maximized; it stays freely resizable.
 - On first start the window opens above the system tray instead of screen-center.
 - A brief "saved" hint appears in the status line after changes are written.
+- Cluster frames always span the full card width; on unrecognized CPUs the hint and its button share one row.
 
 ### Fixed
 

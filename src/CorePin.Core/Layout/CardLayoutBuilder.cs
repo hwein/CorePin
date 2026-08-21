@@ -13,9 +13,8 @@ public static class CardLayoutBuilder
 
         double framing = 2 * m.FrameBorder + 2 * m.FramePad;
 
-        // Width is capped at the widest single-row layout — anything wider would only stretch empty frames.
-        double naturalWidth = topology.Clusters.Max(c => c.Cores.Count * Pitch(c, m) - m.CellGap) + framing;
-        double width = Math.Min(availableWidth, naturalWidth);
+        // Frames always span the card: a frame narrower than the card reads as a broken layout.
+        double width = availableWidth;
         double contentWidth = width - framing;
 
         var clusters = new List<ClusterBox>(topology.Clusters.Count);

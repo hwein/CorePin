@@ -16,20 +16,26 @@
     <ScrollViewer Grid.Row="0"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
-                  VerticalAlignment="Top" HorizontalAlignment="Left"
+                  VerticalAlignment="Top"
                   Focusable="False">
       <views:CpuMapControl x:Name="Map"/>
     </ScrollViewer>
 
-    <StackPanel x:Name="HintBlock" Grid.Row="1" Margin="0,12,0,0" Visibility="Collapsed">
-      <TextBlock Text="This CPU isn't profiled yet — pinning works, but the groups aren't named."
+    <!-- Text and button share one row: a second row would push the clusters into scrolling. -->
+    <Grid x:Name="HintBlock" Grid.Row="1" Margin="0,12,0,0" Visibility="Collapsed">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center"
+                 Text="This CPU isn't profiled yet — pinning works, but the groups aren't named."
                  TextWrapping="Wrap"
                  Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
-      <Button x:Name="HelpNameButton" Content="Help us name them" Click="HelpNameButton_Click"
-              Margin="0,8,0,0" Padding="8,0" MinWidth="{StaticResource CorePin.HitTarget.MinWidth}"
-              Height="{StaticResource CorePin.HitTarget.MinHeight}"
-              HorizontalAlignment="Left"/>
-    </StackPanel>
+      <Button x:Name="HelpNameButton" Grid.Column="1" Content="Help us name them"
+              Click="HelpNameButton_Click" VerticalAlignment="Center"
+              Padding="8,0" MinWidth="{StaticResource CorePin.HitTarget.MinWidth}"
+              Height="{StaticResource CorePin.HitTarget.MinHeight}"/>
+    </Grid>
 
     <!-- Preset buttons are inserted before the toggle in code, one per cluster. -->
     <WrapPanel x:Name="PresetRow" Grid.Row="2" Margin="0,12,0,0">
