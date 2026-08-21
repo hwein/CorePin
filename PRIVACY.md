@@ -5,13 +5,16 @@ no crash reporting, no update checks, no accounts.
 
 ## What CorePin stores on your PC
 
-Everything lives in `%LOCALAPPDATA%\CorePin\`. Delete that folder and all of it is gone.
+Everything lives in `%LOCALAPPDATA%\CorePin\` — except the autostart entry, see below.
+Delete that folder and everything in it is gone.
 
 - `config.json` — your rules (program file name, last known full path, selected
   threads, enabled flag, rule id), settings (poll interval, log level, window
-  position and size), and your CPU model name with its logical processor count.
-  A full path may contain your Windows user name if the program lives in your
-  profile folder.
+  position and size, and the start-with-Windows mode — `off`, `normal`, or
+  `admin`, a copy of what Windows reports; Windows stays the authority and the
+  value is never acted on), and your CPU model name with its logical processor
+  count. A full path may contain your Windows user name if the program lives in
+  your profile folder.
 - `config.skipped.json` — rules that could not be read, same fields. An unreadable
   `config.json` is renamed aside, never deleted.
 - `logs\` — one file per session: CPU topology (model, cores, caches), file names
@@ -19,6 +22,12 @@ Everything lives in `%LOCALAPPDATA%\CorePin\`. Delete that folder and all of it 
   CorePin's own events. Default level `info`; `debug` adds per-tick detail.
   Capped at 10 MB per file, 5 files, 50 MB in total. No user name, machine name,
   or Windows version is written.
+- **The autostart entry**, outside `%LOCALAPPDATA%`, created only after you pick
+  *Normal* or *As administrator* in the tray menu: in Normal, the Run value
+  `CorePin` in the registry, holding the full path to `CorePin.exe`; in As
+  administrator, the task `CorePin Autostart` in Task Scheduler, holding that path
+  plus your account's SID, your account name, and the author `CorePin`. Picking
+  *Off* removes it again.
 
 ## What CorePin reads while running (memory only)
 
@@ -26,6 +35,9 @@ Everything lives in `%LOCALAPPDATA%\CorePin\`. Delete that folder and all of it 
   to fill the "+ From running…" picker.
 - Icons from the executables of your rules.
 - CPU identity and topology, elevation status, Windows theme settings.
+- The autostart state from the registry (the `CorePin` Run value and its
+  `StartupApproved` entry) and from Task Scheduler (the `CorePin Autostart` task),
+  read at startup, whenever the tray menu opens, and after each change.
 
 Nothing else from other programs: no window contents, no keystrokes, no files.
 

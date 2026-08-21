@@ -68,6 +68,54 @@ original mask when a rule stops applying — disabled, deleted, or set back to a
 the process keeps its pinned cores until it exits. A rule that still exists shows
 *Blocked by Windows*; after a delete, only the log records the failure.
 
+## Start with Windows
+
+The tray menu has a submenu, *Start with Windows*, with three entries: *Off*, *Normal*,
+and *As administrator*. The default is Off.
+
+- **Normal** writes a value named `CorePin` under
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. It shows up in Task Manager,
+  under *Startup apps*. Turning it off there is respected — the tray menu then shows
+  *Normal (turned off in Task Manager)*, and picking it again turns it back on.
+- **As administrator** creates a task named `CorePin Autostart` in Task Scheduler's
+  root folder, running with the highest available rights of your own account. It shows
+  up only in Task Scheduler, not in Task Manager's *Startup apps*.
+
+Both mechanisms start `CorePin.exe --tray`.
+
+A UAC prompt appears only right after picking a mode in the menu — both turning *As
+administrator* on and turning it off ask once. It never appears at startup; decline any
+prompt you did not trigger yourself.
+
+A change takes effect at the next sign-in. The running instance is left as it is: a
+non-elevated instance stays non-elevated even after switching to *As administrator*.
+
+*As administrator* is greyed out for accounts without administrator rights. Entering
+the credentials of a *different* administrator account in the UAC dialog creates the
+task for that account, not yours.
+
+The task launches whatever sits at its recorded path, elevated — put CorePin in a
+folder ordinary programs cannot write to (for example under `Program Files`) before
+turning *As administrator* on.
+
+Moving or renaming the executable: in Normal, CorePin repairs the entry itself the next
+time it starts, once the old file is gone. In As administrator, the menu shows *As
+administrator (location changed – select to repair)*; picking it repairs the task with
+one UAC prompt. A second copy of CorePin in another folder, with the old file still in
+place, changes nothing.
+
+Windows usually shows a notification when Normal is turned on, saying an autostart app
+was added — that is Windows, not CorePin.
+
+### Removing CorePin
+
+Set *Start with Windows* to Off before you delete CorePin.exe. Otherwise the Run value
+`CorePin` or the task `CorePin Autostart` is left behind — without effect, but still
+there. The Run value can be deleted in Registry Editor under
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (Task Manager can only disable it,
+not delete it), the task in Task Scheduler. Also delete `%LOCALAPPDATA%\CorePin\`, which
+holds the configuration and logs.
+
 ## Download
 
 Prebuilt binaries are published on the
