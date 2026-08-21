@@ -155,7 +155,11 @@ public partial class App : Application
         PlaceWindow(window);
         window.LocationChanged += (_, _) => { CaptureBounds(window); window.Flyout.CloseFlyout(); };
         window.SizeChanged += (_, _) => { CaptureBounds(window); window.Flyout.CloseFlyout(); };
-        if (!_options.Tray) window.Show();
+        if (_options.Tray) return;
+
+        // Show alone can open behind the active window once the start-up work has used up the foreground grant.
+        window.Show();
+        window.Activate();
     }
 
     /// Without a stored position on an attached monitor the window opens over the tray.

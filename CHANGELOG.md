@@ -52,3 +52,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A rule without an `exeName` is skipped with its own reason instead of `malformed entry`.
 - The very first start no longer logs a false "logicalProcessors changed" warning.
 - Rule list and picker rows use theme colors for titles and selection instead of the classic grey chrome.
+- A freshly started CorePin comes to the front even while other windows are maximized.
