@@ -32,9 +32,11 @@ internal static class Program
         if (opts.DebugGroupCount is { } count) source = new GroupCountOverride(source, count);
 #endif
 
-        // 0. Dumper: before everything else — no WPF, no mutex, no logger, no directories.
+        // 0. Dumper and autostart helper: before all else — no WPF, mutex, logger or directories.
         if (opts.DumpTopology)
             return DumpTopologyCommand.Run(source, opts, NullLog.Instance);
+        if (opts.AutostartTask)
+            return AutostartHelper.Run(opts);
 
         // 1. Topology. The try reaches BEYOND Build: a format error gets the same box, code 4.
         CpuTopology topology;

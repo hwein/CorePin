@@ -251,6 +251,17 @@ internal static partial class NativeMethods
     internal const int SM_CXSMICON = 49;
     internal const uint ICON_RESOURCE_VERSION = 0x00030000;   // the .ico image format version
     internal const uint LR_DEFAULTCOLOR = 0x00000000;
+
+    /// TokenInformation is an out int here: TOKEN_ELEVATION_TYPE is the only class asked for.
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetTokenInformation(
+        nint TokenHandle, int TokenInformationClass, out int TokenInformation,
+        int TokenInformationLength, out int ReturnLength);
+
+    internal const int TokenElevationType = 18;
+
+    internal const int TokenElevationTypeLimited = 3;
 }
 
 /// Kept alive by the window that installs it: Win32 holds only the native pointer.

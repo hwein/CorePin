@@ -51,6 +51,15 @@ public static class MessageBoxes
         MessageBox(0, text, Caption, MB_OK | MB_ICONINFORMATION);
     }
 
+    /// One text for the helper and the main instance; the detail line names what failed.
+    public static void ShowAutostartFailed(string detail)
+    {
+        string text = "Autostart could not be changed.\n\n"
+                    + detail
+                    + "\n\nYou can inspect or remove the task \"CorePin Autostart\" in Task Scheduler.";
+        MessageBox(0, text, Caption, MB_OK | MB_ICONWARNING);
+    }
+
 #if DEBUG
     public static void ShowFixtureTooLarge(int fixtureLp, int machineLp)
     {
