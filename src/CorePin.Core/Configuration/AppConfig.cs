@@ -11,8 +11,8 @@ public sealed record Settings
 {
     public int PollIntervalMs { get; init; } = 1000;
 
-    /// Read and written, but NOT evaluated in v0.1.
-    public string StartWithWindows { get; init; } = "normal";
+    /// Read and written, but never evaluated — Windows, not this field, decides the mode.
+    public string StartWithWindows { get; init; } = "off";
 
     public LogLevel LogLevel { get; init; } = LogLevel.Information;
 

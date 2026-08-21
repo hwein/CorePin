@@ -102,7 +102,7 @@ public static class ConfigStoreTests
         Assert.Equal(1, loaded.Config.SchemaVersion, "a missing schemaVersion defaults to 1");
         Assert.Equal(LogLevel.Debug, loaded.Config.Settings.LogLevel, "logLevel is read");
         Assert.Equal(1000, loaded.Config.Settings.PollIntervalMs, "the remaining settings fields stay at their default");
-        Assert.Equal("normal", loaded.Config.Settings.StartWithWindows, "startWithWindows stays at its default");
+        Assert.Equal("off", loaded.Config.Settings.StartWithWindows, "startWithWindows stays at its default");
         Assert.True(loaded.Config.Settings.WindowBounds is null, "windowBounds stays unset");
         Assert.Equal(0, CorruptFiles(log), "no rename happened");
     }
@@ -556,7 +556,7 @@ public static class ConfigStoreTests
             + "  },\n"
             + "  \"settings\": {\n"
             + "    \"pollIntervalMs\": 1000,\n"
-            + "    \"startWithWindows\": \"normal\",\n"
+            + "    \"startWithWindows\": \"off\",\n"
             + "    \"windowBounds\": null,\n"
             + "    \"logLevel\": \"info\"\n"
             + "  },\n"
