@@ -68,9 +68,19 @@ original mask when a rule stops applying — disabled, deleted, or set back to a
 the process keeps its pinned cores until it exits. A rule that still exists shows
 *Blocked by Windows*; after a delete, only the log records the failure.
 
-## Status
+## Download
 
-**Early development. Not released, not yet usable.** There is no download.
+Prebuilt binaries are published on the
+[Releases page](https://github.com/hwein/CorePin/releases). CorePin is a single
+self-contained executable — no installer, no runtime to install.
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by
+[SignPath Foundation](https://signpath.org).
+
+## Privacy
+
+CorePin has no network code and sends nothing anywhere; what it stores locally, and what
+leaves your PC only when you ask for it, is listed in [PRIVACY.md](PRIVACY.md).
 
 ## Requirements
 
