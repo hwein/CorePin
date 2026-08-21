@@ -23,5 +23,8 @@
     <Content Include="..\data\raw\*.b64"
              Link="data\raw\%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\data\autostart\*.xml"
+             Link="data\autostart\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

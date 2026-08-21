@@ -16,6 +16,7 @@ public static class ArchitectureTests
         ["Layout"] = ["Primitives", "Topology"],
         ["Rules"] = ["Primitives"],
         ["Platform"] = ["Primitives", "Topology"],
+        ["Autostart"] = ["Platform"],
         ["Configuration"] = ["Primitives", "Time", "Rules", "Diagnostics"],
         ["Engine"] = ["Primitives", "Time", "Rules", "Platform", "Diagnostics"],
         ["ViewModel"] = ["Primitives", "Rules", "Configuration", "Engine", "Diagnostics"],
