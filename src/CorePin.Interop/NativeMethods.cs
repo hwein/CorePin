@@ -198,6 +198,9 @@ internal static partial class NativeMethods
     internal static partial bool SetForegroundWindow(nint hWnd);
 
     internal const uint MF_STRING = 0x00000000;
+    internal const uint MF_GRAYED = 0x00000001;
+    internal const uint MF_CHECKED = 0x00000008;
+    internal const uint MF_POPUP = 0x00000010;
     internal const uint MF_SEPARATOR = 0x00000800;
     internal const uint TPM_RIGHTBUTTON = 0x0002;
     internal const uint TPM_RIGHTALIGN = 0x0008;

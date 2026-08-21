@@ -603,6 +603,34 @@ public static class RuleListViewModelTests
             "the geometry is current before anything flushes it");
     }
 
+    public static void Test_StartWithWindows_MirroredIntoTheSavedSettings()
+    {
+        var harness = OneRule();
+
+        harness.Model.SetStartWithWindows("admin");
+
+        Assert.Equal(1, harness.Saves.Count, "a mode that differs from the file asks for exactly one save");
+        Assert.Equal("admin", harness.Saves[^1].Settings.StartWithWindows, "and it carries what Windows reported");
+    }
+
+    public static void Test_StartWithWindows_UnchangedModeSavesNothing()
+    {
+        var harness = new Harness(OneRuleSet(), settings: new Settings { StartWithWindows = "normal" });
+
+        harness.Model.SetStartWithWindows("normal");
+
+        Assert.Equal(0, harness.Saves.Count, "the file already says normal, so no start rewrites it");
+    }
+
+    public static void Test_StartWithWindows_LockedGuardWritesNothing()
+    {
+        var harness = OneRule(guard: WriteGuard.NoPersist);
+
+        harness.Model.SetStartWithWindows("admin");
+
+        Assert.Equal(0, harness.Saves.Count, "a discarded write would only log a save-discarded line per start");
+    }
+
     public static void Test_SaveDebounce_ManyRequestsOneSave()
     {
         var saved = new List<AppConfig>();

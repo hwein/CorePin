@@ -5,10 +5,12 @@ namespace CorePin.Core.Autostart;
 
 public static class AutostartTruth
 {
+    public static bool IsOwnTask(TaskState task, string ownSid)
+        => task.Present && string.Equals(task.PrincipalSid, ownSid, StringComparison.OrdinalIgnoreCase);
+
     public static AutostartMode Resolve(RunKeyState runKey, TaskState task, string ownSid)
     {
-        bool ownTask = task.Present && string.Equals(task.PrincipalSid, ownSid, StringComparison.OrdinalIgnoreCase);
-        if (ownTask) return task.Enabled ? AutostartMode.Admin : AutostartMode.Off;
+        if (IsOwnTask(task, ownSid)) return task.Enabled ? AutostartMode.Admin : AutostartMode.Off;
 
         if (runKey.Value is not null) return runKey.Disabled ? AutostartMode.Off : AutostartMode.Normal;
         return AutostartMode.Off;

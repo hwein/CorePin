@@ -181,4 +181,12 @@ public static class AutostartTruthTests
     {
         Assert.Equal("admin", AutostartTruth.ModeName(AutostartMode.Admin), "the config.json and log vocabulary for Admin");
     }
+
+    public static void Test_IsOwnTask()
+    {
+        Assert.Equal(true, AutostartTruth.IsOwnTask(OwnTaskEnabled, OwnSid), "matching principal SID is the own task");
+        Assert.Equal(false, AutostartTruth.IsOwnTask(ForeignTask, OwnSid), "a different principal SID is not the own task");
+        Assert.Equal(false, AutostartTruth.IsOwnTask(TaskAbsent, OwnSid), "no task present is not the own task");
+        Assert.Equal(false, AutostartTruth.IsOwnTask(new TaskState(true, ExePath, null, true), OwnSid), "a null principal SID is not the own task");
+    }
 }

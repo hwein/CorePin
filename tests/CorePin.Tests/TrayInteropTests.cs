@@ -84,6 +84,9 @@ public static class TrayInteropTests
         Assert.Equal(TrayMenuItem.CopyTopology, TrayMenu.FromCommand(2), "id 2 is CopyTopology");
         Assert.Equal(TrayMenuItem.OpenLogFolder, TrayMenu.FromCommand(3), "id 3 is OpenLogFolder");
         Assert.Equal(TrayMenuItem.Exit, TrayMenu.FromCommand(4), "id 4 is Exit");
+        Assert.Equal(TrayMenuItem.AutostartOff, TrayMenu.FromCommand(5), "id 5 is AutostartOff");
+        Assert.Equal(TrayMenuItem.AutostartNormal, TrayMenu.FromCommand(6), "id 6 is AutostartNormal");
+        Assert.Equal(TrayMenuItem.AutostartAdmin, TrayMenu.FromCommand(7), "id 7 is AutostartAdmin");
     }
 
     public static void Test_FromCommand_ZeroIsNone()
@@ -95,7 +98,7 @@ public static class TrayInteropTests
     public static void Test_FromCommand_OutOfRangeIdsAreNone()
     {
         Assert.Equal(TrayMenuItem.None, TrayMenu.FromCommand(-1), "a negative id maps to None");
-        Assert.Equal(TrayMenuItem.None, TrayMenu.FromCommand(5), "an id past the last defined item maps to None");
+        Assert.Equal(TrayMenuItem.None, TrayMenu.FromCommand(8), "an id past the last defined item maps to None");
     }
 
     public static void Test_SelectFrameIndex_ExactMatchIsChosen()

@@ -38,6 +38,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
     private DateTime? _lastAppliedUtc;
     private DateTime _lastTickUtc;
     private WindowBounds? _currentWindowBounds;
+    private string _startWithWindows;
 
     public RuleListViewModel(
         RuleSet rules,
@@ -74,6 +75,7 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         _measuredMachine = measuredMachine;
         _settings = settings;
         _currentWindowBounds = settings.WindowBounds;
+        _startWithWindows = settings.StartWithWindows;
         _submit = submit;
         _requestSave = requestSave;
         _describeSelection = describeSelection;
@@ -357,6 +359,17 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         RequestSave();
     }
 
+    /// Mirrors what Windows reports; under a guard that discards writes no save is requested at all.
+    public void SetStartWithWindows(string mode)
+    {
+        ArgumentNullException.ThrowIfNull(mode);
+        if (!_guard.CanPersist) return;
+        if (mode == _startWithWindows) return;
+
+        _startWithWindows = mode;
+        RequestSave();
+    }
+
     private static string? LoadBanner(GuardReason reason, ConfigLoadOutcome outcome, string? detail) => reason switch
     {
         GuardReason.ConfigTooNew => BannerText.ConfigTooNew,
@@ -412,7 +425,11 @@ public sealed class RuleListViewModel : INotifyPropertyChanged
         {
             SchemaVersion = _schemaVersion,
             Machine = machine,
-            Settings = _settings with { WindowBounds = _currentWindowBounds },
+            Settings = _settings with
+            {
+                WindowBounds = _currentWindowBounds,
+                StartWithWindows = _startWithWindows,
+            },
             Rules = _rules,
         };
     }

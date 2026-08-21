@@ -1,4 +1,5 @@
 using System.Windows;
+using CorePin.Core.Autostart;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Topology;
 using CorePin.Interop;
@@ -17,6 +18,7 @@ internal sealed class TrayController : IDisposable
     private readonly TopologySnapshot _topologySource;
     private readonly string _logDirectory;
     private readonly ConfigPersister _configPersister;
+    private readonly AutostartController _autostart;
     private readonly ILog _log;
 
     private byte[]? _lightIconBytes;
@@ -28,7 +30,7 @@ internal sealed class TrayController : IDisposable
 
     public TrayController(TrayIcon trayIcon, MessageWindow messageWindow, Window mainWindow,
                           TopologySnapshot topologySource, int ruleCount, string logDirectory,
-                          ConfigPersister configPersister, ILog log)
+                          ConfigPersister configPersister, AutostartController autostart, ILog log)
     {
         _trayIcon = trayIcon;
         _messageWindow = messageWindow;
@@ -36,6 +38,7 @@ internal sealed class TrayController : IDisposable
         _topologySource = topologySource;
         _logDirectory = logDirectory;
         _configPersister = configPersister;
+        _autostart = autostart;
         _log = log;
 
         trayIcon.LeftClicked += OnLeftClicked;
@@ -107,7 +110,9 @@ internal sealed class TrayController : IDisposable
 
     private void OnRightClicked()
     {
-        switch (TrayMenu.Show(_messageWindow))
+        // Read before the menu, act on the same reading: this is what the user just saw.
+        var autostart = _autostart.Read();
+        switch (TrayMenu.Show(_messageWindow, autostart.Menu))
         {
             case TrayMenuItem.OpenCorePin:
                 ToggleMainWindow();
@@ -117,6 +122,15 @@ internal sealed class TrayController : IDisposable
                 break;
             case TrayMenuItem.OpenLogFolder:
                 LogFolder.TryOpen(_logDirectory, _log);
+                break;
+            case TrayMenuItem.AutostartOff:
+                _autostart.Select(autostart, AutostartMode.Off);
+                break;
+            case TrayMenuItem.AutostartNormal:
+                _autostart.Select(autostart, AutostartMode.Normal);
+                break;
+            case TrayMenuItem.AutostartAdmin:
+                _autostart.Select(autostart, AutostartMode.Admin);
                 break;
             case TrayMenuItem.Exit:
                 OnExitClicked();

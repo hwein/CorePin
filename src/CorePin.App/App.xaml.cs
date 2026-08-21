@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.IO;
+using System.Security.Principal;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using CorePin.App.Themes;
 using CorePin.Core.Configuration;
 using CorePin.Core.Diagnostics;
@@ -109,8 +111,12 @@ public partial class App : Application
 
         // 5d. Subscribes first, shows the icon last.
         string logDirectory = _fileLog?.Directory ?? string.Empty;
+        var autostart = CreateAutostartController();
         _trayController = new TrayController(_trayIcon, _messageWindow, window, _topology.Source,
-                                             _rules.Rules.Count, logDirectory, _persister, _log);
+                                             _rules.Rules.Count, logDirectory, _persister, autostart, _log);
+
+        //     Behind the icon: the first late binding to the Task Scheduler costs time.
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(autostart.Reconcile));
 
         // 5e. The window theme is a separate registry value from the tray icon variant.
         _messageWindow.SettingChanged += Theme.OnSystemThemeChanged;
@@ -160,6 +166,16 @@ public partial class App : Application
         // Show alone can open behind the active window once the start-up work has used up the foreground grant.
         window.Show();
         window.Activate();
+    }
+
+    private AutostartController CreateAutostartController()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+
+        return new AutostartController(
+            new RunKeyAutostart(), () => new AutostartTask(), _log, Environment.ProcessPath,
+            identity.Name, identity.User?.Value, ElevationInfo.IsElevated, ElevationInfo.CanElevate,
+            _viewModel.SetStartWithWindows);
     }
 
     /// Without a stored position on an attached monitor the window opens over the tray.
