@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
@@ -11,17 +10,16 @@ namespace CorePin.App;
 
 /// One reading of Windows: what the menu showed and what a selection then acts on.
 internal sealed record AutostartSnapshot(
-    TrayMenuState Menu, RunKeyState RunKey, bool OwnTask,
+    AutostartMode Mode, RunKeyState RunKey, bool OwnTask,
     bool TaskEnabled, string? TaskExePath, long ReadMs)
 {
-    internal AutostartMode Mode => Menu.Mode;
+    internal bool On => Mode != AutostartMode.Off;
 }
 
 /// Windows is the truth: every change reads it back, mirrors the mode and logs the state.
 internal sealed class AutostartController
 {
     private const string Category = "app";
-    private const int ErrorCancelled = 1223;
 
     private readonly IRunKeyAutostart _runKey;
     private readonly Func<IAutostartTask> _taskFactory;
@@ -30,7 +28,6 @@ internal sealed class AutostartController
     private readonly string _userName;
     private readonly string? _userSid;
     private readonly bool _isElevated;
-    private readonly bool _adminSelectable;
     private readonly Action<string> _mirror;
 
     private IAutostartTask? _task;
@@ -39,7 +36,7 @@ internal sealed class AutostartController
     internal AutostartController(
         IRunKeyAutostart runKey, Func<IAutostartTask> taskFactory, ILog log,
         string? exePath, string userName, string? userSid,
-        bool isElevated, bool canElevate, Action<string> mirror)
+        bool isElevated, Action<string> mirror)
     {
         ArgumentNullException.ThrowIfNull(runKey);
         ArgumentNullException.ThrowIfNull(taskFactory);
@@ -54,11 +51,8 @@ internal sealed class AutostartController
         _userName = userName;
         _userSid = userSid;
         _isElevated = isElevated;
-        _adminSelectable = canElevate || isElevated;
         _mirror = mirror;
     }
-
-    private enum StepResult { Done, Failed, Cancelled }
 
     /// The truth rule and the ownership check see the same string; no SID matches no task.
     private string OwnSid => _userSid ?? string.Empty;
@@ -73,11 +67,7 @@ internal sealed class AutostartController
         bool ownTask = AutostartTruth.IsOwnTask(task, OwnSid);
         if (task.Present && !ownTask) ReportForeignTask();
 
-        var mode = AutostartTruth.Resolve(runKey, task, OwnSid);
-        var menu = new TrayMenuState(mode, _adminSelectable, IsStale(mode, task.ExePath),
-                                     runKey.Value is not null && runKey.Disabled);
-
-        return new AutostartSnapshot(menu, runKey, ownTask,
+        return new AutostartSnapshot(AutostartTruth.Resolve(runKey, task, OwnSid), runKey, ownTask,
                                      task.Enabled, task.ExePath, watch.ElapsedMilliseconds);
     }
 
@@ -88,7 +78,9 @@ internal sealed class AutostartController
         {
             var snapshot = Read();
 
-            if (snapshot.RunKey.Value is not null && snapshot.OwnTask && TryRemoveRunKey())
+            // Only an enabled task supersedes the run key — next to a disabled one it starts CorePin.
+            if (snapshot.RunKey.Value is not null && snapshot.OwnTask && snapshot.TaskEnabled
+                && TryRemoveRunKey())
             {
                 snapshot = snapshot with { RunKey = new RunKeyState(null, false) };
                 _log.Information(Category, "autostart: both mechanisms present, run key removed");
@@ -103,120 +95,81 @@ internal sealed class AutostartController
         }
     }
 
-    internal void Select(AutostartSnapshot snapshot, AutostartMode selected)
+    /// The tick is a switch: selecting the entry always means the opposite of what it showed.
+    internal void Toggle(AutostartSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
-        var action = AutostartTruth.Target(snapshot.Mode, selected,
-                                           snapshot.Menu.NormalDisabledInTaskManager,
-                                           snapshot.Menu.AdminStale);
-        if (action == AutostartAction.None) return;
-
-        // Started, not awaited: ApplyAsync catches on its own so nothing can end the process.
-        _ = ApplyAsync(snapshot, action);
-    }
-
-    private async Task ApplyAsync(AutostartSnapshot snapshot, AutostartAction action)
-    {
         try
         {
-            var step = await TaskStepAsync(snapshot, action);
-            if (step == StepResult.Cancelled) return;
+            var choice = AutostartTruth.Switch(snapshot.Mode, _isElevated);
+            if (choice == AutostartSwitch.RefuseNeedsAdmin)
+            {
+                RefuseNeedsAdmin();
+                return;
+            }
 
-            if (step == StepResult.Done) RunKeyStep(action);
+            Apply(snapshot, choice);
             Publish(Read());
         }
         catch (Exception ex)
         {
-            Fail(AutostartHelper.DescribeFailure(ex));
+            Fail(AutostartTexts.DescribeFailure(ex));
         }
     }
 
-    /// The step that may need elevation runs first; a failed one takes nothing back.
-    private async Task<StepResult> TaskStepAsync(AutostartSnapshot snapshot, AutostartAction action)
+    /// The task step runs first, the run key step only on its success; nothing is ever taken back.
+    private void Apply(AutostartSnapshot snapshot, AutostartSwitch choice)
     {
-        if (action == AutostartAction.SetAdmin) return await CreateTask();
-        if (!snapshot.OwnTask) return StepResult.Done;
-
-        if (!_isElevated) return await RunHelper("delete");
-        return TryTask(task => task.Delete()) ? StepResult.Done : StepResult.Failed;
+        switch (choice)
+        {
+            case AutostartSwitch.TurnOnRunKey:
+                if (ExePathOrFail() is { } exePath) TryWriteRunKey(exePath);
+                break;
+            case AutostartSwitch.TurnOnTask:
+                if (RegisterTask()) TryRemoveRunKey();
+                break;
+            case AutostartSwitch.TurnOff:
+                // Only the elevated instance may delete the task; the normal one owns the run key alone.
+                if (_isElevated && snapshot.OwnTask && !TryTask(task => task.Delete())) break;
+                TryRemoveRunKey();
+                break;
+            default:
+                throw new UnreachableException();
+        }
     }
 
-    /// Elevated in-process: reads the task fresh so a stale menu snapshot cannot hide a foreign one.
-    private async Task<StepResult> CreateTask()
+    /// Reads the task fresh: a menu snapshot seconds old could hide a foreign task of the same name.
+    private bool RegisterTask()
     {
-        if (!_isElevated) return await RunHelper("create");
-
         var task = ReadTask();
         if (task.Present && !AutostartTruth.IsOwnTask(task, OwnSid))
         {
-            Fail(AutostartHelper.TaskBelongsToAnotherUser);
-            return StepResult.Failed;
+            Fail(AutostartTexts.TaskBelongsToAnotherUser);
+            return false;
         }
 
-        if (ExePathOrFail() is not { } exePath) return StepResult.Failed;
-        return TryRegister(exePath) ? StepResult.Done : StepResult.Failed;
+        return ExePathOrFail() is { } exePath && TryRegisterOwnTask(exePath);
     }
 
-    private async Task<StepResult> RunHelper(string command)
+    /// Registers unconditionally: the caller already confirmed ownership, from this reading or a fresh one.
+    private bool TryRegisterOwnTask(string exePath)
     {
-        if (ExePathOrFail() is not { } exePath) return StepResult.Failed;
-
-        Process? helper;
-        try
+        if (_userSid is not { } sid)
         {
-            helper = Process.Start(new ProcessStartInfo(exePath)
-            {
-                UseShellExecute = true,
-                Verb = "runas",
-                Arguments = $"--autostart-task {command}",
-            });
-        }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
-        {
-            _log.Information(Category, "autostart change cancelled at the UAC prompt");
-            return StepResult.Cancelled;
-        }
-        catch (Win32Exception ex)
-        {
-            Fail($"elevation request: Win32 {ex.NativeErrorCode}");
-            return StepResult.Failed;
+            Fail(AutostartTexts.NoSid);
+            return false;
         }
 
-        if (helper is null)
-        {
-            Fail("The elevated helper did not start.");
-            return StepResult.Failed;
-        }
-
-        using (helper)
-        {
-            await helper.WaitForExitAsync();
-            return HelperResult(helper.ExitCode);
-        }
+        return TryTask(task => task.Register(exePath, _userName, sid));
     }
 
-    private StepResult HelperResult(int exitCode)
+    /// Nothing was changed, so nothing is read back, mirrored or reported as a new state.
+    private void RefuseNeedsAdmin()
     {
-        if (exitCode == 0) return StepResult.Done;
-
-        string detail = $"helper exit code {exitCode}";
-        _log.Warning(Category, $"autostart change failed: {detail}");
-        // The helper shows its own dialog before it returns Failed; any other code shows none.
-        if (exitCode != AutostartHelper.Failed) MessageBoxes.ShowAutostartFailed(detail);
-        return StepResult.Failed;
-    }
-
-    private void RunKeyStep(AutostartAction action)
-    {
-        if (action == AutostartAction.SetNormal)
-        {
-            if (ExePathOrFail() is { } exePath) TryWriteRunKey(exePath);
-            return;
-        }
-
-        // Admin and Off both end without a run key, and removing a missing one is no error.
-        TryRemoveRunKey();
+        _log.Warning(Category,
+            "autostart task needs administrator rights to be removed, left unchanged");
+        MessageBoxes.ShowAutostartFailed(AutostartTexts.NeedsAdmin);
     }
 
     private void ReconcilePath(AutostartSnapshot snapshot)
@@ -256,19 +209,13 @@ internal sealed class AutostartController
         if (!_isElevated)
         {
             _log.Warning(Category,
-                "autostart task points to a missing file, select it in the tray menu to repair");
+                "autostart task points to a missing file, start CorePin as administrator to repair");
             return;
         }
 
-        if (TryRegister(exePath))
+        if (TryRegisterOwnTask(exePath))
             _log.Information(Category, "autostart task updated to the current location");
     }
-
-    /// A path that is merely different belongs to another copy; only a missing file needs repair.
-    private bool IsStale(AutostartMode mode, string? taskExePath)
-        => mode == AutostartMode.Admin
-           && !(_exePath is { } own && string.Equals(taskExePath, own, StringComparison.OrdinalIgnoreCase))
-           && !File.Exists(taskExePath);
 
     /// Late binding fails as RuntimeBinderException, the service as COM or IO errors — every
     /// one of them reads as "no task", and the next use builds the connection again.
@@ -294,17 +241,6 @@ internal sealed class AutostartController
 
     private IAutostartTask ConnectTask() => _task ??= _taskFactory();
 
-    private bool TryRegister(string exePath)
-    {
-        if (_userSid is not { } sid)
-        {
-            Fail(AutostartHelper.NoSid);
-            return false;
-        }
-
-        return TryTask(task => task.Register(exePath, _userName, sid));
-    }
-
     private bool TryTask(Action<IAutostartTask> change)
     {
         try
@@ -315,7 +251,7 @@ internal sealed class AutostartController
         catch (Exception ex)
         {
             _task = null;
-            Fail(AutostartHelper.DescribeFailure(ex));
+            Fail(AutostartTexts.DescribeFailure(ex));
             return false;
         }
     }
@@ -366,7 +302,7 @@ internal sealed class AutostartController
     {
         if (_exePath is { } path) return path;
 
-        Fail(AutostartHelper.NoExePath);
+        Fail(AutostartTexts.NoExePath);
         return null;
     }
 

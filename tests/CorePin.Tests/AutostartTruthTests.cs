@@ -60,10 +60,10 @@ public static class AutostartTruthTests
             "the user disabled the task in Task Scheduler");
     }
 
-    public static void Test_Resolve_RunKeyPresent_OwnTaskDisabled_IsOff()
+    public static void Test_Resolve_RunKeyPresent_OwnTaskDisabled_IsNormal()
     {
-        Assert.Equal(AutostartMode.Off, AutostartTruth.Resolve(RunKeyPresent, OwnTaskDisabled, OwnSid),
-            "a disabled own task does not fall back to the run key");
+        Assert.Equal(AutostartMode.Normal, AutostartTruth.Resolve(RunKeyPresent, OwnTaskDisabled, OwnSid),
+            "a disabled task starts nothing, so the run key next to it decides");
     }
 
     public static void Test_Resolve_RunKeyDisabled_OwnTaskDisabled_IsOff()
@@ -90,81 +90,46 @@ public static class AutostartTruthTests
             "the foreign task is ignored, and the disabled run key means Off");
     }
 
-    public static void Test_Target_OffToOff_IsNone()
+    public static void Test_Switch_Off_NotElevated_TurnsOnRunKey()
     {
-        Assert.Equal(AutostartAction.None,
-            AutostartTruth.Target(AutostartMode.Off, AutostartMode.Off, normalDisabledInTaskManager: false, adminStale: false),
-            "selecting the current mode does nothing");
+        Assert.Equal(AutostartSwitch.TurnOnRunKey,
+            AutostartTruth.Switch(AutostartMode.Off, isElevated: false),
+            "a normal instance can only ever write the run key");
     }
 
-    public static void Test_Target_OffToNormal_IsSetNormal()
+    public static void Test_Switch_Off_Elevated_TurnsOnTask()
     {
-        Assert.Equal(AutostartAction.SetNormal,
-            AutostartTruth.Target(AutostartMode.Off, AutostartMode.Normal, normalDisabledInTaskManager: false, adminStale: false),
-            "a different selection always acts");
+        Assert.Equal(AutostartSwitch.TurnOnTask,
+            AutostartTruth.Switch(AutostartMode.Off, isElevated: true),
+            "an elevated instance registers the task, so the autostart keeps its rights");
     }
 
-    public static void Test_Target_OffToAdmin_IsSetAdmin()
+    public static void Test_Switch_Normal_NotElevated_TurnsOff()
     {
-        Assert.Equal(AutostartAction.SetAdmin,
-            AutostartTruth.Target(AutostartMode.Off, AutostartMode.Admin, normalDisabledInTaskManager: false, adminStale: false),
-            "a different selection always acts");
+        Assert.Equal(AutostartSwitch.TurnOff,
+            AutostartTruth.Switch(AutostartMode.Normal, isElevated: false),
+            "the run key is the normal instance's own to remove");
     }
 
-    public static void Test_Target_NormalToOff_IsSetOff()
+    public static void Test_Switch_Normal_Elevated_TurnsOff()
     {
-        Assert.Equal(AutostartAction.SetOff,
-            AutostartTruth.Target(AutostartMode.Normal, AutostartMode.Off, normalDisabledInTaskManager: false, adminStale: false),
-            "a different selection always acts");
+        Assert.Equal(AutostartSwitch.TurnOff,
+            AutostartTruth.Switch(AutostartMode.Normal, isElevated: true),
+            "an elevated instance removes the run key as well");
     }
 
-    public static void Test_Target_NormalToNormal_IsNone()
+    public static void Test_Switch_Admin_NotElevated_RefusesNeedsAdmin()
     {
-        Assert.Equal(AutostartAction.None,
-            AutostartTruth.Target(AutostartMode.Normal, AutostartMode.Normal, normalDisabledInTaskManager: false, adminStale: false),
-            "the same selection with no exception flag does nothing");
+        Assert.Equal(AutostartSwitch.RefuseNeedsAdmin,
+            AutostartTruth.Switch(AutostartMode.Admin, isElevated: false),
+            "deleting the task needs rights this instance does not have and never asks for");
     }
 
-    public static void Test_Target_NormalToAdmin_IsSetAdmin()
+    public static void Test_Switch_Admin_Elevated_TurnsOff()
     {
-        Assert.Equal(AutostartAction.SetAdmin,
-            AutostartTruth.Target(AutostartMode.Normal, AutostartMode.Admin, normalDisabledInTaskManager: false, adminStale: false),
-            "a different selection always acts");
-    }
-
-    public static void Test_Target_AdminToOff_IsSetOff()
-    {
-        Assert.Equal(AutostartAction.SetOff,
-            AutostartTruth.Target(AutostartMode.Admin, AutostartMode.Off, normalDisabledInTaskManager: false, adminStale: false),
-            "a different selection always acts");
-    }
-
-    public static void Test_Target_AdminToNormal_IsSetNormal()
-    {
-        Assert.Equal(AutostartAction.SetNormal,
-            AutostartTruth.Target(AutostartMode.Admin, AutostartMode.Normal, normalDisabledInTaskManager: false, adminStale: false),
-            "a different selection always acts");
-    }
-
-    public static void Test_Target_AdminToAdmin_IsNone()
-    {
-        Assert.Equal(AutostartAction.None,
-            AutostartTruth.Target(AutostartMode.Admin, AutostartMode.Admin, normalDisabledInTaskManager: false, adminStale: false),
-            "the same selection with no exception flag does nothing");
-    }
-
-    public static void Test_Target_NormalToNormal_DisabledInTaskManager_IsSetNormal()
-    {
-        Assert.Equal(AutostartAction.SetNormal,
-            AutostartTruth.Target(AutostartMode.Normal, AutostartMode.Normal, normalDisabledInTaskManager: true, adminStale: false),
-            "re-selecting Normal while Task Manager turned it off re-enables it");
-    }
-
-    public static void Test_Target_AdminToAdmin_Stale_IsSetAdmin()
-    {
-        Assert.Equal(AutostartAction.SetAdmin,
-            AutostartTruth.Target(AutostartMode.Admin, AutostartMode.Admin, normalDisabledInTaskManager: false, adminStale: true),
-            "re-selecting Admin while the task points at a stale path repairs it");
+        Assert.Equal(AutostartSwitch.TurnOff,
+            AutostartTruth.Switch(AutostartMode.Admin, isElevated: true),
+            "the instance that could create the task can also delete it");
     }
 
     public static void Test_ModeName_Off()

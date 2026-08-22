@@ -174,7 +174,7 @@ public partial class App : Application
 
         return new AutostartController(
             new RunKeyAutostart(), () => new AutostartTask(), _log, Environment.ProcessPath,
-            identity.Name, identity.User?.Value, ElevationInfo.IsElevated, ElevationInfo.CanElevate,
+            identity.Name, identity.User?.Value, ElevationInfo.IsElevated,
             _viewModel.SetStartWithWindows);
     }
 

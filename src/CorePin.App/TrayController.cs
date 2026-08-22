@@ -1,5 +1,4 @@
 using System.Windows;
-using CorePin.Core.Autostart;
 using CorePin.Core.Diagnostics;
 using CorePin.Core.Topology;
 using CorePin.Interop;
@@ -112,7 +111,7 @@ internal sealed class TrayController : IDisposable
     {
         // Read before the menu, act on the same reading: this is what the user just saw.
         var autostart = _autostart.Read();
-        switch (TrayMenu.Show(_messageWindow, autostart.Menu))
+        switch (TrayMenu.Show(_messageWindow, autostart.On))
         {
             case TrayMenuItem.OpenCorePin:
                 ToggleMainWindow();
@@ -123,14 +122,8 @@ internal sealed class TrayController : IDisposable
             case TrayMenuItem.OpenLogFolder:
                 LogFolder.TryOpen(_logDirectory, _log);
                 break;
-            case TrayMenuItem.AutostartOff:
-                _autostart.Select(autostart, AutostartMode.Off);
-                break;
-            case TrayMenuItem.AutostartNormal:
-                _autostart.Select(autostart, AutostartMode.Normal);
-                break;
-            case TrayMenuItem.AutostartAdmin:
-                _autostart.Select(autostart, AutostartMode.Admin);
+            case TrayMenuItem.Autostart:
+                _autostart.Toggle(autostart);
                 break;
             case TrayMenuItem.Exit:
                 OnExitClicked();

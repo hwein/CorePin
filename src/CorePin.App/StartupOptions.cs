@@ -3,18 +3,12 @@ using CorePin.Core.Diagnostics;
 
 namespace CorePin.App;
 
-public enum AutostartTaskCommand { Create, Delete }
-
 /// Parse never logs — it runs before the logger exists.
 public sealed record StartupOptions
 {
     public bool Tray { get; init; }
 
     public bool DumpTopology { get; init; }
-
-    public bool AutostartTask { get; init; }                // the flag was given, valid or not
-
-    public AutostartTaskCommand? AutostartCommand { get; init; }
 
     public required IReadOnlyList<string> Unknown { get; init; }
 
@@ -36,8 +30,6 @@ public sealed record StartupOptions
         var unknown = new List<string>();
         bool tray = false;
         bool dump = false;
-        bool autostartTask = false;
-        AutostartTaskCommand? autostartCommand = null;
         LogLevel? level = null;
         string? invalid = null;
 #if DEBUG
@@ -51,16 +43,6 @@ public sealed record StartupOptions
             string arg = args[i];
             if (Is(arg, "--tray")) { tray = true; continue; }
             if (Is(arg, "--dump-topology")) { dump = true; continue; }
-
-            if (Is(arg, "--autostart-task"))
-            {
-                // Like --log-level: the last occurrence wins, a stale sibling state would lie.
-                string? value = Value(args, ref i);
-                autostartTask = true;
-                autostartCommand = AutostartCommandOf(value);
-                if (autostartCommand is null && value is not null) unknown.Add(value);
-                continue;
-            }
 
             if (Is(arg, "--log-level"))
             {
@@ -92,8 +74,6 @@ public sealed record StartupOptions
         {
             Tray = tray,
             DumpTopology = dump,
-            AutostartTask = autostartTask,
-            AutostartCommand = autostartCommand,
             Unknown = unknown,
             LogLevelOverride = level,
             InvalidLogLevelValue = invalid,
@@ -104,11 +84,6 @@ public sealed record StartupOptions
 #endif
         };
     }
-
-    private static AutostartTaskCommand? AutostartCommandOf(string? value)
-        => Is(value, "create") ? AutostartTaskCommand.Create
-         : Is(value, "delete") ? AutostartTaskCommand.Delete
-         : null;
 
     private static bool Is(string? arg, string name)
         => string.Equals(arg, name, StringComparison.OrdinalIgnoreCase);

@@ -198,9 +198,7 @@ internal static partial class NativeMethods
     internal static partial bool SetForegroundWindow(nint hWnd);
 
     internal const uint MF_STRING = 0x00000000;
-    internal const uint MF_GRAYED = 0x00000001;
     internal const uint MF_CHECKED = 0x00000008;
-    internal const uint MF_POPUP = 0x00000010;
     internal const uint MF_SEPARATOR = 0x00000800;
     internal const uint TPM_RIGHTBUTTON = 0x0002;
     internal const uint TPM_RIGHTALIGN = 0x0008;
@@ -254,17 +252,6 @@ internal static partial class NativeMethods
     internal const int SM_CXSMICON = 49;
     internal const uint ICON_RESOURCE_VERSION = 0x00030000;   // the .ico image format version
     internal const uint LR_DEFAULTCOLOR = 0x00000000;
-
-    /// TokenInformation is an out int here: TOKEN_ELEVATION_TYPE is the only class asked for.
-    [LibraryImport("advapi32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static partial bool GetTokenInformation(
-        nint TokenHandle, int TokenInformationClass, out int TokenInformation,
-        int TokenInformationLength, out int ReturnLength);
-
-    internal const int TokenElevationType = 18;
-
-    internal const int TokenElevationTypeLimited = 3;
 }
 
 /// Kept alive by the window that installs it: Win32 holds only the native pointer.

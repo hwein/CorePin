@@ -51,7 +51,7 @@ public static class MessageBoxes
         MessageBox(0, text, Caption, MB_OK | MB_ICONINFORMATION);
     }
 
-    /// One text for the helper and the main instance; the detail line names what failed.
+    /// One frame for every autostart change that did not happen; the detail line names why.
     public static void ShowAutostartFailed(string detail)
     {
         string text = "Autostart could not be changed.\n\n"
