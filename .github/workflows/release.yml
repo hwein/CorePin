@@ -44,6 +44,11 @@ jobs:
           $ver = $env:TAG -replace '^v',''
           dotnet publish src\CorePin.App -c Release -p:SelfContained=false -p:RuntimeIdentifier=win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:PublishReadyToRun=false -p:Version=$ver -p:InformationalVersion=$ver -o out
 
+      - name: Check publish output
+        run: |
+          $extra = Get-ChildItem out -File | Where-Object { $_.Name -ne 'CorePin.exe' -and $_.Extension -ne '.pdb' }
+          if ($extra) { Write-Output "::error::Unexpected files next to CorePin.exe: $($extra.Name -join ', ')"; exit 1 }
+
       - name: Package
         run: |
           $zip = "CorePin-$env:TAG-win-x64.zip"
