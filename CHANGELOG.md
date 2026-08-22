@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Rule rows report the program name to screen readers (UI Automation).
+- The CPU map is readable by screen readers: clusters and threads appear as checkboxes and list items in UI Automation, and can be toggled from there.
 
 ### Changed
 
