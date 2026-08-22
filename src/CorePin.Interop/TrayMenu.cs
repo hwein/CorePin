@@ -38,12 +38,24 @@ public static class TrayMenu
             Append(menu, MF_STRING, (nuint)TrayMenuItem.Exit, "Exit", log);
 
             // Without this the menu stays open when the user clicks somewhere else.
-            SetForegroundWindow(window.Handle);
+            if (!SetForegroundWindow(window.Handle))
+                log.Warning("tray", "tray menu foreground request refused (SetForegroundWindow)");
+
+            Marshal.SetLastPInvokeError(0);
             int command = TrackPopupMenu(
                 menu, TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_BOTTOMALIGN | TPM_RIGHTALIGN,
                 cursor.X, cursor.Y, 0, window.Handle, 0);
+            if (command == 0)
+            {
+                // Cancelling the menu also returns 0, but leaves the error at 0.
+                int error = Marshal.GetLastPInvokeError();
+                if (error != 0)
+                    log.Warning("tray", $"tray menu could not be shown, Win32 {error}");
+            }
+
             // Without this the menu closes by itself the second time it is opened.
-            PostMessage(window.Handle, WM_NULL, 0, 0);
+            if (!PostMessage(window.Handle, WM_NULL, 0, 0))
+                log.Warning("tray", $"tray menu dismiss message failed, Win32 {Marshal.GetLastPInvokeError()}");
 
             return FromCommand(command);
         }

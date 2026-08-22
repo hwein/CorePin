@@ -50,13 +50,15 @@ public sealed class TrayIcon : IDisposable
         }
 
         data.UVersion = NOTIFYICON_VERSION_4;
-        Shell_NotifyIcon(NIM_SETVERSION, in data);
+        if (!Shell_NotifyIcon(NIM_SETVERSION, in data))
+            _log.Warning("tray", "tray icon version negotiation failed (NIM_SETVERSION)");
     }
 
     public void UpdateIcon(nint hIcon)
     {
         var data = BuildData(hIcon, _lastTooltip);
-        Shell_NotifyIcon(NIM_MODIFY, in data);
+        if (!Shell_NotifyIcon(NIM_MODIFY, in data))
+            _log.Warning("tray", "tray icon update failed (NIM_MODIFY, icon)");
     }
 
     public void UpdateTooltip(string tooltip)
@@ -66,7 +68,8 @@ public sealed class TrayIcon : IDisposable
         _lastTooltip = tooltip;
         var data = BuildData(hIcon: 0, tooltip);
         data.UFlags = NIF_TIP | NIF_SHOWTIP;
-        Shell_NotifyIcon(NIM_MODIFY, in data);
+        if (!Shell_NotifyIcon(NIM_MODIFY, in data))
+            _log.Warning("tray", "tray icon update failed (NIM_MODIFY, tooltip)");
     }
 
     public void Remove()
@@ -74,7 +77,8 @@ public sealed class TrayIcon : IDisposable
         if (!_added) return;
 
         var data = BuildData(hIcon: 0, tooltip: "");
-        Shell_NotifyIcon(NIM_DELETE, in data);
+        if (!Shell_NotifyIcon(NIM_DELETE, in data))
+            _log.Warning("tray", "tray icon removal failed (NIM_DELETE)");
         _added = false;
     }
 
