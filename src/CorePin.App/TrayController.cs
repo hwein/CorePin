@@ -111,7 +111,7 @@ internal sealed class TrayController : IDisposable
     {
         // Read before the menu, act on the same reading: this is what the user just saw.
         var autostart = _autostart.Read();
-        switch (TrayMenu.Show(_messageWindow, autostart.On))
+        switch (TrayMenu.Show(_messageWindow, autostart.On, _log))
         {
             case TrayMenuItem.OpenCorePin:
                 ToggleMainWindow();
