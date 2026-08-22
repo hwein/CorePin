@@ -10,11 +10,10 @@ Delete that folder and everything in it is gone.
 
 - `config.json` — your rules (program file name, last known full path, selected
   threads, enabled flag, rule id), settings (poll interval, log level, window
-  position and size, and the start-with-Windows mode — `off`, `normal`, or
-  `admin`, a copy of what Windows reports; Windows stays the authority and the
-  value is never acted on), and your CPU model name with its logical processor
-  count. A full path may contain your Windows user name if the program lives in
-  your profile folder.
+  position and size, and the start-with-Windows state Windows reports — `off`,
+  `normal`, or `admin`; Windows stays the authority and the value is never acted
+  on), and your CPU model name with its logical processor count. A full path may
+  contain your Windows user name if the program lives in your profile folder.
 - `config.skipped.json` — rules that could not be read, same fields. An unreadable
   `config.json` is renamed aside, never deleted.
 - `logs\` — one file per session: CPU topology (model, cores, caches), file names
@@ -22,12 +21,12 @@ Delete that folder and everything in it is gone.
   CorePin's own events. Default level `info`; `debug` adds per-tick detail.
   Capped at 10 MB per file, 5 files, 50 MB in total. No user name, machine name,
   or Windows version is written.
-- **The autostart entry**, outside `%LOCALAPPDATA%`, created only after you pick
-  *Normal* or *As administrator* in the tray menu: in Normal, the Run value
-  `CorePin` in the registry, holding the full path to `CorePin.exe`; in As
-  administrator, the task `CorePin Autostart` in Task Scheduler, holding that path
-  plus your account's SID, your account name, and the author `CorePin`. Picking
-  *Off* removes it again.
+- **The autostart entry**, outside `%LOCALAPPDATA%`, created only after you check
+  *Start with Windows* in the tray menu: from a normal instance, the Run value
+  `CorePin` in the registry, holding the full path to `CorePin.exe`; from an
+  elevated instance, the task `CorePin Autostart` in Task Scheduler, holding that
+  path plus your account's SID, your account name, and the author `CorePin`.
+  Unchecking it removes the entry again, from the instance type that created it.
 
 ## What CorePin reads while running (memory only)
 

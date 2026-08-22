@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Start with Windows — off, normal, or as administrator — from the tray menu.
+- Start with Windows from the tray menu; keeps the rights CorePin was started with.
 
 ### Fixed
 

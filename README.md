@@ -70,50 +70,60 @@ the process keeps its pinned cores until it exits. A rule that still exists show
 
 ## Start with Windows
 
-The tray menu has a submenu, *Start with Windows*, with three entries: *Off*, *Normal*,
-and *As administrator*. The default is Off.
+The tray menu has a checkbox, *Start with Windows*, off by default. CorePin never asks
+for UAC and never elevates itself — the user decides at launch: a plain double-click
+starts it normally, *Run as administrator* starts it elevated.
 
-- **Normal** writes a value named `CorePin` under
+Checking the box means Windows starts CorePin at the next sign-in, with the same rights
+as the instance the box was checked in:
+
+- **From a normal instance**, it writes a value named `CorePin` under
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. It shows up in Task Manager,
-  under *Startup apps*. Turning it off there is respected — the tray menu then shows
-  *Normal (turned off in Task Manager)*, and picking it again turns it back on.
-- **As administrator** creates a task named `CorePin Autostart` in Task Scheduler's
-  root folder, running with the highest available rights of your own account. It shows
-  up only in Task Scheduler, not in Task Manager's *Startup apps*.
+  under *Startup apps*. Turning it off there is respected — the checkbox then shows
+  off, and checking it again turns it back on.
+- **From an elevated instance**, it creates a task named `CorePin Autostart` in Task
+  Scheduler's root folder, running with the highest available rights of your own
+  account. It shows up only in Task Scheduler, not in Task Manager's *Startup apps*.
 
 Both mechanisms start `CorePin.exe --tray`.
 
-A UAC prompt appears only right after picking a mode in the menu — both turning *As
-administrator* on and turning it off ask once. It never appears at startup; decline any
-prompt you did not trigger yourself.
+The change takes effect at the next sign-in; the running instance is left as it is. To
+switch which one is used, turn the checkbox off, then back on from the instance you
+want it to run as.
 
-A change takes effect at the next sign-in. The running instance is left as it is: a
-non-elevated instance stays non-elevated even after switching to *As administrator*.
+If the box was checked from an elevated instance and you uncheck it from a normal one,
+nothing changes and this appears instead:
 
-*As administrator* is greyed out for accounts without administrator rights. Entering
-the credentials of a *different* administrator account in the UAC dialog creates the
-task for that account, not yours.
+> Start with Windows was turned on from an instance running as administrator. Start CorePin as administrator to turn it off.
+
+Start CorePin as administrator, then uncheck the box there.
+
+Moving or renaming the executable: the Run value repairs itself the next time CorePin
+starts, once the old file is gone. The task repairs itself the same way, but only at
+an elevated start — a normal start after that only records the stale path in the log
+and changes nothing. A second copy of CorePin in another folder, with the old file
+still in place, changes nothing either way.
+
+Windows usually shows a notification when the Run value is added, saying an autostart
+app was added — that is Windows, not CorePin.
 
 The task launches whatever sits at its recorded path, elevated — put CorePin in a
 folder ordinary programs cannot write to (for example under `Program Files`) before
-turning *As administrator* on.
+checking the box from an elevated instance.
 
-Moving or renaming the executable: in Normal, CorePin repairs the entry itself the next
-time it starts, once the old file is gone. In As administrator, the menu shows *As
-administrator (location changed – select to repair)*; picking it repairs the task with
-one UAC prompt. A second copy of CorePin in another folder, with the old file still in
-place, changes nothing.
-
-Windows usually shows a notification when Normal is turned on, saying an autostart app
-was added — that is Windows, not CorePin.
+*Run as administrator* opens a UAC dialog. Confirming it with the credentials of a
+different account runs the whole CorePin process under that account — a different
+Windows profile, a different `config.json` and different logs, and a checkbox that
+controls that account's autostart, not yours.
 
 ### Removing CorePin
 
-Set *Start with Windows* to Off before you delete CorePin.exe. Otherwise the Run value
-`CorePin` or the task `CorePin Autostart` is left behind — without effect, but still
-there. The Run value can be deleted in Registry Editor under
-`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (Task Manager can only disable it,
-not delete it), the task in Task Scheduler. Also delete `%LOCALAPPDATA%\CorePin\`, which
+Turn *Start with Windows* off first (an elevated instance can remove both kinds of
+entry, a normal one only the Run value), then delete `CorePin.exe`. Otherwise the Run
+value `CorePin` or the task `CorePin Autostart` is left behind, without effect but
+still there: remove it in Registry Editor, under
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (Task Manager can only disable
+it, not delete it), or in Task Scheduler. Also delete `%LOCALAPPDATA%\CorePin\`, which
 holds the configuration and logs.
 
 ## Download
