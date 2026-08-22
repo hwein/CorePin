@@ -18,7 +18,7 @@
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalAlignment="Top"
                   Focusable="False">
-      <views:CpuMapControl x:Name="Map"/>
+      <views:CpuMapControl x:Name="Map" AutomationProperties.Name="CPU map"/>
     </ScrollViewer>
 
     <!-- Text and button share one row: a second row would push the clusters into scrolling. -->

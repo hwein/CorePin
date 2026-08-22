@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Input;
 using System.Windows.Media;
 using CorePin.App.Themes;
@@ -54,6 +55,15 @@ public sealed class CpuMapControl : FrameworkElement
 
     internal bool ShowSelection => _showSelection;
 
+    /// The mask gestures edit, shown or not.
+    internal AffinityMask EditMask => _selection;
+
+    internal bool IsInteractive => _interactive;
+
+    internal CpuTopology? Topology => _topology;
+
+    internal CardLayout? Layout => _layout;
+
     internal void Initialize(CpuTopology topology, ThemeController theme)
     {
         _topology = topology;
@@ -64,12 +74,15 @@ public sealed class CpuMapControl : FrameworkElement
 
     internal void SetInput(AffinityMask selection, bool showSelection, bool interactive)
     {
+        var shownBefore = Selection;
+        bool enabledChanged = _interactive != interactive;
         _selection = selection;
         _showSelection = showSelection;
         _interactive = interactive;
         Focusable = interactive;
         if (!interactive) _hover = CardHitTest.Nothing;
         InvalidateVisual();
+        NotifyPeer(shownBefore, Selection, enabledChanged);
     }
 
     /// The one funnel for every gesture: reject empty, swallow no-ops, then announce.
@@ -83,11 +96,22 @@ public sealed class CpuMapControl : FrameworkElement
             return;
         }
 
+        var shownBefore = Selection;
         _selection = candidate;
         _showSelection = true;   // a selection the user just made is always shown
         Notice?.Invoke(null);
         InvalidateVisual();
+        NotifyPeer(shownBefore, Selection, enabledChanged: false);
         SelectionChanged?.Invoke(candidate);
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new CpuMapAutomationPeer(this);
+
+    /// FromElement never creates a peer: without a UI Automation client there is nobody to tell.
+    private void NotifyPeer(AffinityMask before, AffinityMask after, bool enabledChanged)
+    {
+        if (UIElementAutomationPeer.FromElement(this) is CpuMapAutomationPeer peer)
+            peer.OnStateChanged(before, after, enabledChanged);
     }
 
     private void OnThemeApplied()
