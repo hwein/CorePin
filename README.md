@@ -130,7 +130,9 @@ holds the configuration and logs.
 
 Prebuilt binaries are published on the
 [Releases page](https://github.com/hwein/CorePin/releases). CorePin is a single
-self-contained executable — no installer, no runtime to install.
+executable, no installer. It needs the
+[.NET 10 Desktop Runtime (x64)](https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-x64.exe);
+if it is missing, the first start shows a dialog with the download link.
 
 Future releases may be code-signed through [SignPath Foundation](https://signpath.org)
 (free code signing by [SignPath.io](https://signpath.io)); the application is pending,
@@ -144,6 +146,7 @@ leaves your PC only when you ask for it, is listed in [PRIVACY.md](PRIVACY.md).
 ## Requirements
 
 - Windows 11 x64 (build 22000 or newer). Windows 10 21H2+ should work but is not tested.
+- .NET 10 Desktop Runtime (x64), see Download.
 - 64 or fewer logical processors — one Windows processor group. This covers every
   consumer CPU, up to and including a 32-core Threadripper. Larger systems are detected
   and declined honestly rather than handled incorrectly.

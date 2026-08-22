@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The release build is framework-dependent: it needs the .NET 10 Desktop Runtime (x64), and the download is under 1 MB instead of 120 MB.
+
+### Fixed
+
+- The released `CorePin.exe` starts again; the 0.0.1 and 0.0.2 downloads crashed on launch.
+
 ## [0.0.2] - 2026-08-22
 
 ### Added
