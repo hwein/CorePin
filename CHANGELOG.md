@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Rule rows report the program name to screen readers (UI Automation).
+
+### Changed
+
+- "Help us name them" opens the CPU profile issue template instead of a prefilled blank issue.
+
+### Fixed
+
+- Notice banners fade out instead of vanishing abruptly.
+- Failures of the tray icon and its menu are logged instead of passing silently.
+
 ## [0.0.3] - 2026-08-22
 
 ### Changed
