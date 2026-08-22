@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using CorePin.Core.Primitives;
 
 namespace CorePin.Core.Topology;
 
@@ -87,14 +88,11 @@ public static class TopologyJson
 
     private static string CoreLine(CoreRecord core)
         => string.Create(CultureInfo.InvariantCulture,
-            $$"""{ "mask": "{{Hex(core.Mask)}}", "efficiencyClass": {{core.EfficiencyClass}}, "smt": {{(core.Smt ? "true" : "false")}} }""");
+            $$"""{ "mask": "{{AffinityMask.ToHex(core.Mask)}}", "efficiencyClass": {{core.EfficiencyClass}}, "smt": {{(core.Smt ? "true" : "false")}} }""");
 
     private static string CacheLine(CacheRecord cache)
         => string.Create(CultureInfo.InvariantCulture,
-            $$"""{ "level": {{cache.Level}}, "sizeBytes": {{cache.SizeBytes}}, "mask": "{{Hex(cache.Mask)}}" }""");
-
-    private static string Hex(ulong value)
-        => "0x" + value.ToString("X16", CultureInfo.InvariantCulture);
+            $$"""{ "level": {{cache.Level}}, "sizeBytes": {{cache.SizeBytes}}, "mask": "{{AffinityMask.ToHex(cache.Mask)}}" }""");
 
     private static CoreRecord ReadCore(JsonElement element, string path) => new()
     {

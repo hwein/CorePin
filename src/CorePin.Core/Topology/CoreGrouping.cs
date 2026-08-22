@@ -1,5 +1,5 @@
 using System.Numerics;
-using static CorePin.Core.Topology.MaskFormat;
+using CorePin.Core.Primitives;
 
 namespace CorePin.Core.Topology;
 
@@ -26,7 +26,7 @@ internal static class CoreGrouping
             {
                 // Same mask means the same cache; the maximum invents nothing.
                 existing.SizeBytes = Math.Max(existing.SizeBytes, cache.SizeBytes);
-                notes.Add(NoteStep.L3Groups, cache.Mask, $"l3: duplicate mask {Hex(cache.Mask)}");
+                notes.Add(NoteStep.L3Groups, cache.Mask, $"l3: duplicate mask {AffinityMask.ToHex(cache.Mask)}");
             }
             else
             {
@@ -44,7 +44,8 @@ internal static class CoreGrouping
                 if ((groups[i].Mask & groups[j].Mask) == 0) continue;
                 ulong low = Math.Min(groups[i].Mask, groups[j].Mask);
                 ulong high = Math.Max(groups[i].Mask, groups[j].Mask);
-                notes.Add(NoteStep.L3Groups, low, $"l3: overlapping masks {Hex(low)} {Hex(high)}", structural: true);
+                notes.Add(NoteStep.L3Groups, low,
+                    $"l3: overlapping masks {AffinityMask.ToHex(low)} {AffinityMask.ToHex(high)}", structural: true);
             }
         }
 
@@ -66,7 +67,7 @@ internal static class CoreGrouping
                 {
                     // Half-attached core: no pattern we can name, but the only sensible fit.
                     notes.Add(NoteStep.CoreAssignment, core.Mask,
-                        $"l3: partial core coverage {Hex(core.Mask)}", structural: true);
+                        $"l3: partial core coverage {AffinityMask.ToHex(core.Mask)}", structural: true);
                 }
                 break;
             }
@@ -76,7 +77,7 @@ internal static class CoreGrouping
         {
             if ((group.Mask & ~machineMask) != 0)
                 notes.Add(NoteStep.CoreAssignment, group.Mask,
-                    $"l3: mask covers unknown processors {Hex(group.Mask)}");
+                    $"l3: mask covers unknown processors {AffinityMask.ToHex(group.Mask)}");
         }
     }
 
@@ -89,7 +90,7 @@ internal static class CoreGrouping
             if (group.Cores.Count == 0)
             {
                 notes.Add(NoteStep.EmptyGroups, group.Mask,
-                    $"l3: group without cores {Hex(group.Mask)}", structural: true);
+                    $"l3: group without cores {AffinityMask.ToHex(group.Mask)}", structural: true);
                 continue;
             }
             kept.Add(group);
@@ -118,7 +119,7 @@ internal static class CoreGrouping
             // The mask is what gets pinned and drawn; the flag is trimming.
             if (maskSaysSmt != snapshot.Cores[i].Smt)
                 notes.Add(NoteStep.Smt, cores[i].Mask,
-                    $"core: smt flag contradicts mask {Hex(cores[i].Mask)}");
+                    $"core: smt flag contradicts mask {AffinityMask.ToHex(cores[i].Mask)}");
         }
         return hasSmt;
     }

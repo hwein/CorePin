@@ -63,7 +63,10 @@ public readonly struct AffinityMask : IEquatable<AffinityMask>
     }
 
     /// "0x" plus exactly 16 uppercase hex digits — the canonical form of the dump.
-    public string ToHex() => "0x" + Value.ToString("X16", CultureInfo.InvariantCulture);
+    public static string ToHex(ulong value)
+        => "0x" + value.ToString("X16", CultureInfo.InvariantCulture);
+
+    public string ToHex() => ToHex(Value);
 
     public bool Equals(AffinityMask other) => Value == other.Value;
 

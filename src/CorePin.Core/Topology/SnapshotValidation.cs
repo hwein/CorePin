@@ -1,5 +1,5 @@
 using System.Globalization;
-using static CorePin.Core.Topology.MaskFormat;
+using CorePin.Core.Primitives;
 
 namespace CorePin.Core.Topology;
 
@@ -22,22 +22,22 @@ internal static class SnapshotValidation
                 throw new TopologyFormatException("a core record has mask 0x0000000000000000");
             if ((seen & core.Mask) != 0)
                 throw new TopologyFormatException(
-                    $"core masks overlap at {Hex(seen & core.Mask)}, a logical processor cannot belong to two cores");
+                    $"core masks overlap at {AffinityMask.ToHex(seen & core.Mask)}, a logical processor cannot belong to two cores");
             seen |= core.Mask;
 
             if (core.EfficiencyClass < 0)
                 throw new TopologyFormatException(
-                    $"core {Hex(core.Mask)} has negative efficiencyClass {core.EfficiencyClass.ToString(CultureInfo.InvariantCulture)}");
+                    $"core {AffinityMask.ToHex(core.Mask)} has negative efficiencyClass {core.EfficiencyClass.ToString(CultureInfo.InvariantCulture)}");
         }
 
         foreach (var cache in snapshot.Caches)
         {
             if (cache.Level < 1)
                 throw new TopologyFormatException(
-                    $"cache {Hex(cache.Mask)} has level {cache.Level.ToString(CultureInfo.InvariantCulture)}");
+                    $"cache {AffinityMask.ToHex(cache.Mask)} has level {cache.Level.ToString(CultureInfo.InvariantCulture)}");
             if (cache.SizeBytes < 0)
                 throw new TopologyFormatException(
-                    $"cache {Hex(cache.Mask)} has negative sizeBytes {cache.SizeBytes.ToString(CultureInfo.InvariantCulture)}");
+                    $"cache {AffinityMask.ToHex(cache.Mask)} has negative sizeBytes {cache.SizeBytes.ToString(CultureInfo.InvariantCulture)}");
         }
     }
 }
