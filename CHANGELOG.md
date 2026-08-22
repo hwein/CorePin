@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-08-22
+
 ### Added
 
 - Start with Windows from the tray menu; keeps the rights CorePin was started with.

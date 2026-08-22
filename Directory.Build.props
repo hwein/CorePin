@@ -9,8 +9,8 @@
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <NoWarn></NoWarn>
-    <Version>0.0.1</Version>
-    <InformationalVersion>0.0.1</InformationalVersion>
+    <Version>0.0.2</Version>
+    <InformationalVersion>0.0.2</InformationalVersion>
     <Company>CorePin</Company>
     <Product>CorePin</Product>
   </PropertyGroup>
