@@ -28,10 +28,21 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Test
-        run: dotnet run --project tests\CorePin.Tests
+        run: |
+          dotnet run --project tests\CorePin.Tests
+
+      - name: Check version
+        run: |
+          $ver = $env:TAG -replace '^v',''
+          $propsVersion = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version
+          if ($propsVersion -ne $ver) {
+            Write-Output "::warning::Directory.Build.props says $propsVersion, tag says $ver; the published binary carries $ver"
+          }
 
       - name: Publish
-        run: dotnet publish src\CorePin.App -c Release -p:SelfContained=true -p:RuntimeIdentifier=win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:PublishReadyToRun=false -o out
+        run: |
+          $ver = $env:TAG -replace '^v',''
+          dotnet publish src\CorePin.App -c Release -p:SelfContained=true -p:RuntimeIdentifier=win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:PublishReadyToRun=false -p:Version=$ver -p:InformationalVersion=$ver -o out
 
       - name: Package
         run: |

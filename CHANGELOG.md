@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Start with Windows — off, normal, or as administrator — from the tray menu.
 
+### Fixed
+
+- The version reported in the log and in the file properties now matches the release version.
+
 ## [0.0.1] - 2026-08-21
 
 ### Added
