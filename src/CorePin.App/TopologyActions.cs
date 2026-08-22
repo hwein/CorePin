@@ -42,10 +42,8 @@ internal static class TopologyActions
     internal static bool TryOpenIssuePage(string cpuName, ILog log)
     {
         string title = string.IsNullOrWhiteSpace(cpuName) ? "CPU profile" : $"CPU profile: {cpuName}";
-        string body = "CorePin has copied your topology dump to the clipboard.\n\n" +
-                      "Please paste it here, replacing this text.";
         string url = "https://github.com/hwein/CorePin/issues/new" +
-                     $"?title={Uri.EscapeDataString(title)}&body={Uri.EscapeDataString(body)}";
+                     $"?template=cpu-profile.md&title={Uri.EscapeDataString(title)}";
 
         try
         {
