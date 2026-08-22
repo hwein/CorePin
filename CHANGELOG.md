@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-08-22
+
 ### Changed
 
 - The release build is framework-dependent: it needs the .NET 10 Desktop Runtime (x64), and the download is under 1 MB instead of 120 MB.
