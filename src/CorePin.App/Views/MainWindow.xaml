@@ -31,19 +31,24 @@
 
     <Style x:Key="CorePin.Style.BannerArea" TargetType="ItemsControl">
       <Style.Triggers>
-        <!-- Same 120 ms fade as a rule row; the Collapse itself still cuts a fade-out short. -->
+        <!-- Same 120 ms fade as a rule row; the collapse is keyed to the end of the fade-out. -->
         <DataTrigger Binding="{Binding Banners.Count}" Value="0">
-          <Setter Property="Visibility" Value="Collapsed"/>
           <DataTrigger.EnterActions>
             <BeginStoryboard>
               <Storyboard>
                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                  <DiscreteObjectKeyFrame KeyTime="0:0:0.12" Value="{x:Static Visibility.Collapsed}"/>
+                </ObjectAnimationUsingKeyFrames>
               </Storyboard>
             </BeginStoryboard>
           </DataTrigger.EnterActions>
           <DataTrigger.ExitActions>
             <BeginStoryboard>
               <Storyboard>
+                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                  <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+                </ObjectAnimationUsingKeyFrames>
                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12"/>
               </Storyboard>
             </BeginStoryboard>
@@ -61,6 +66,7 @@
       <Setter Property="VerticalContentAlignment" Value="Stretch"/>
       <Setter Property="TextElement.Foreground" Value="{DynamicResource CorePin.Brush.TextPrimary}"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="AutomationProperties.Name" Value="{Binding ExeName}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="ListBoxItem">
@@ -259,6 +265,7 @@
                    Foreground="{DynamicResource CorePin.Brush.TextSecondary}"/>
 
         <ListBox x:Name="RuleList" Grid.Row="1" ItemsSource="{Binding Rows}"
+                 AutomationProperties.Name="Rules"
                  Style="{StaticResource CorePin.Style.RuleList}"
                  ItemTemplate="{StaticResource CorePin.Template.RuleRow}"
                  ItemContainerStyle="{StaticResource CorePin.Style.RuleRowItem}"
