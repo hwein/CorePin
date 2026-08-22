@@ -132,8 +132,9 @@ Prebuilt binaries are published on the
 [Releases page](https://github.com/hwein/CorePin/releases). CorePin is a single
 self-contained executable — no installer, no runtime to install.
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by
-[SignPath Foundation](https://signpath.org).
+Future releases may be code-signed through [SignPath Foundation](https://signpath.org)
+(free code signing by [SignPath.io](https://signpath.io)); the application is pending,
+current releases are unsigned.
 
 ## Privacy
 
